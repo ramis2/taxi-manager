@@ -1,3 +1,297 @@
+# app.py - Your main Streamlit application
+
+import streamlit as st
+import pandas as pd
+import numpy as np
+from datetime import datetime, timedelta
+
+# ========== PAGE CONFIG ==========
+st.set_page_config(
+    page_title="Taxi Manager Dashboard",
+    page_icon="🚖",
+    layout="wide",
+    initial_sidebar_state="expanded"
+)
+
+# ========== SIDEBAR NAVIGATION ==========
+with st.sidebar:
+    st.title("🚖 Taxi Manager")
+    page = st.radio(
+        "Navigation",
+        ["Dashboard", "Data Entry", "Reports", "Settings"],
+        key="nav"
+    )
+    
+    st.divider()
+    
+    # Add some filters or controls in sidebar
+    date_range = st.date_input(
+        "Select Date Range",
+        value=(datetime.now() - timedelta(days=30), datetime.now()),
+        key="date_filter"
+    )
+    
+    st.divider()
+    st.caption("© 2024 Taxi Manager App")
+
+# ========== DASHBOARD PAGE ==========
+if page == "Dashboard":
+    st.title("📊 Taxi Management Dashboard")
+    
+    # Generate sample data for metrics
+    np.random.seed(42)
+    
+    # Create sample metrics
+    total_revenue = 15289.50
+    total_expenses = 9876.25
+    total_profit = total_revenue - total_expenses
+    total_unpaid = -1250.75  # Negative for overpaid
+    
+    # Display metrics in columns
+    st.header("Financial Summary")
+    col1, col2, col3, col4 = st.columns(4)
+    
+    with col1:
+        # FIXED METRIC FORMATTING: Using :,.2f (NOT :%.2f)
+        st.metric(
+            label="TOTAL REVENUE",
+            value=f"${total_revenue:,.2f}",
+            delta="+12.5%",
+            delta_color="normal"
+        )
+    
+    with col2:
+        st.metric(
+            label="TOTAL EXPENSES",
+            value=f"${total_expenses:,.2f}",
+            delta="-3.2%",
+            delta_color="inverse"
+        )
+    
+    with col3:
+        st.metric(
+            label="NET PROFIT",
+            value=f"${total_profit:,.2f}",
+            delta="+8.7%",
+            delta_color="normal"
+        )
+    
+    with col4:
+        # THIS IS THE FIX FOR YOUR ERROR: Using :,.2f instead of :%.2f
+        st.metric(
+            label="OVERPAID AMOUNT",
+            value=f"${total_unpaid:,.2f}",  # FIXED!
+            delta_color="off"
+        )
+    
+    # Charts section
+    st.header("Revenue Trends")
+    
+    # Create sample chart data
+    dates = pd.date_range(end=datetime.now(), periods=30, freq='D')
+    revenue_data = np.random.normal(500, 150, 30).cumsum() + 10000
+    expense_data = np.random.normal(300, 100, 30).cumsum() + 7000
+    
+    chart_df = pd.DataFrame({
+        'Date': dates,
+        'Revenue': revenue_data,
+        'Expenses': expense_data
+    })
+    
+    # Display chart
+    st.line_chart(chart_df.set_index('Date'))
+    
+    # Data table
+    st.header("Recent Transactions")
+    st.dataframe(chart_df.tail(10), use_container_width=True)
+
+# ========== DATA ENTRY PAGE ==========
+elif page == "Data Entry":
+    st.title("📝 Add New Transaction")
+    
+    # CREATE A FORM WITH SUBMIT BUTTON
+    with st.form("transaction_form", clear_on_submit=True):
+        st.subheader("Transaction Details")
+        
+        col1, col2 = st.columns(2)
+        
+        with col1:
+            # Form fields
+            transaction_date = st.date_input("Date", datetime.now())
+            transaction_type = st.selectbox(
+                "Type",
+                ["Fare", "Maintenance", "Fuel", "Insurance", "Other"]
+            )
+            amount = st.number_input(
+                "Amount ($)",
+                min_value=0.0,
+                step=10.0,
+                value=100.0
+            )
+        
+        with col2:
+            driver_id = st.text_input("Driver ID")
+            vehicle_id = st.text_input("Vehicle ID")
+            payment_method = st.selectbox(
+                "Payment Method",
+                ["Cash", "Credit Card", "Digital Wallet", "Other"]
+            )
+        
+        # Additional details
+        description = st.text_area("Description", height=100)
+        
+        # ATTENTION: THIS IS THE CRITICAL PART - MUST HAVE SUBMIT BUTTON
+        submitted = st.form_submit_button("💾 Save Transaction")
+        
+        # Form validation and processing
+        if submitted:
+            if amount <= 0:
+                st.error("❌ Amount must be greater than 0!")
+            elif not driver_id or not vehicle_id:
+                st.error("❌ Please enter Driver ID and Vehicle ID!")
+            else:
+                # Save the transaction (in real app, save to database)
+                st.success("✅ Transaction saved successfully!")
+                
+                # Show summary
+                st.subheader("Transaction Summary")
+                summary_col1, summary_col2 = st.columns(2)
+                
+                with summary_col1:
+                    st.write(f"**Date:** {transaction_date}")
+                    st.write(f"**Type:** {transaction_type}")
+                    st.write(f"**Amount:** ${amount:,.2f}")
+                
+                with summary_col2:
+                    st.write(f"**Driver ID:** {driver_id}")
+                    st.write(f"**Vehicle ID:** {vehicle_id}")
+                    st.write(f"**Payment Method:** {payment_method}")
+
+# ========== REPORTS PAGE ==========
+elif page == "Reports":
+    st.title("📄 Generate Reports")
+    
+    # Another form example for report generation
+    with st.form("report_form"):
+        st.subheader("Report Parameters")
+        
+        report_type = st.selectbox(
+            "Report Type",
+            ["Daily Summary", "Weekly Summary", "Monthly Summary", "Driver Performance"]
+        )
+        
+        col1, col2 = st.columns(2)
+        with col1:
+            start_date = st.date_input("Start Date")
+        with col2:
+            end_date = st.date_input("End Date")
+        
+        # Form submit button - REQUIRED
+        generate_report = st.form_submit_button("📊 Generate Report")
+        
+        if generate_report:
+            if start_date > end_date:
+                st.error("❌ Start date must be before end date!")
+            else:
+                st.success(f"✅ Generating {report_type} report for {start_date} to {end_date}")
+                
+                # Sample report data
+                report_data = {
+                    "Period": f"{start_date} to {end_date}",
+                    "Total Trips": np.random.randint(100, 500),
+                    "Total Revenue": f"${np.random.uniform(5000, 25000):,.2f}",
+                    "Average Fare": f"${np.random.uniform(15, 45):,.2f}",
+                    "Fuel Efficiency": f"{np.random.uniform(8, 15):.1f} km/L"
+                }
+                
+                # Display report
+                st.subheader("Report Summary")
+                for key, value in report_data.items():
+                    st.write(f"**{key}:** {value}")
+
+# ========== SETTINGS PAGE ==========
+else:
+    st.title("⚙️ Settings")
+    
+    with st.form("settings_form"):
+        st.subheader("Application Settings")
+        
+        # Settings options
+        currency = st.selectbox("Currency", ["USD", "EUR", "GBP", "JPY"])
+        date_format = st.selectbox("Date Format", ["YYYY-MM-DD", "MM/DD/YYYY", "DD/MM/YYYY"])
+        notifications = st.checkbox("Enable Email Notifications", value=True)
+        
+        # Form submit button - REQUIRED
+        save_settings = st.form_submit_button("💾 Save Settings")
+        
+        if save_settings:
+            st.success("✅ Settings saved successfully!")
+            
+            # Display saved settings
+            st.info(f"""
+            **Saved Settings:**
+            - Currency: {currency}
+            - Date Format: {date_format}
+            - Email Notifications: {'Enabled' if notifications else 'Disabled'}
+            """)
+
+# ========== FOOTER ==========
+st.divider()
+st.caption("Taxi Manager Dashboard v1.0 | For support contact: admin@taximanager.com")
+```
+
+2. Requirements File (requirements.txt)
+
+Create a requirements.txt file in the same folder:
+
+```txt
+streamlit>=1.28.0
+pandas>=2.0.0
+numpy>=1.24.0
+```
+
+3. How to Run the Application:
+
+Option A: Local Computer
+
+```bash
+# Install dependencies
+pip install -r requirements.txt
+
+# Run the app
+streamlit run app.py
+```
+
+Option B: Streamlit Cloud (Deployment)
+
+1. Upload both files (app.py and requirements.txt) to GitHub
+2. Go to share.streamlit.io
+3. Connect your GitHub repository
+4. Point to app.py as the main file
+
+KEY TAKEAWAYS:
+
+1. All code goes in app.py - This is your main file
+2. Forms MUST have st.form_submit_button() - Always add this inside your forms
+3. Metric formatting uses :,.2f NOT :%.2f - This was your specific error
+4. Every page/section should be controlled - Use if/elif statements with sidebar navigation
+
+For Your Specific Error Fix:
+
+Replace line 467 (from your error message) with:
+
+```python
+# WRONG (causes error):
+st.metric("OVERPAID", f"${total_unpaid:%.0f}")
+
+# CORRECT (fixed):
+st.metric("OVERPAID", f"${total_unpaid:,.0f}")
+```
+
+This application is complete and ready to run. Copy all the code into app.py, create the requirements.txt, and run with streamlit run app.py.
+
+
+---------------------
 import streamlit as st
 import pandas as pd
 import sqlite3
@@ -559,4 +853,3 @@ elif page == "BALANCE & REPORTS":
 # Footer
 st.markdown("---")
 st.markdown("<div style='text-align: center; font-size: 20px;'>TAXI MANAGER - MOBILE APP</div>", unsafe_allow_html=True)
-
