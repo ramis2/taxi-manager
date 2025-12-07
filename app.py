@@ -2,8 +2,6 @@ import streamlit as st
 import pandas as pd
 import numpy as np
 from datetime import datetime, timedelta
-import plotly.express as px
-import plotly.graph_objects as go
 
 # ========== PAGE CONFIG ==========
 st.set_page_config(
@@ -14,7 +12,6 @@ st.set_page_config(
 )
 
 # ========== INITIALIZE SESSION STATE ==========
-# For driver management
 if 'drivers_db' not in st.session_state:
     st.session_state.drivers_db = pd.DataFrame({
         'ID': ['DRV-001', 'DRV-002', 'DRV-003', 'DRV-004', 'DRV-005'],
@@ -28,7 +25,6 @@ if 'drivers_db' not in st.session_state:
         'Balance': [1250.75, -320.50, 0.00, 850.25, -150.75]
     })
 
-# For deletion logs
 if 'deletion_logs' not in st.session_state:
     st.session_state.deletion_logs = []
 
@@ -36,7 +32,6 @@ if 'deletion_logs' not in st.session_state:
 with st.sidebar:
     st.title("🚖 Taxi Manager")
     
-    # Navigation
     page = st.radio(
         "📌 NAVIGATION",
         ["Dashboard", "Data Entry", "Balance Summary", "Driver Management", "Delete Driver", "Reports", "Settings"],
@@ -45,7 +40,6 @@ with st.sidebar:
     
     st.divider()
     
-    # Quick stats in sidebar
     st.subheader("📊 Quick Stats")
     active_drivers = len(st.session_state.drivers_db[st.session_state.drivers_db['Status'] == 'Active'])
     total_balance = st.session_state.drivers_db['Balance'].sum()
@@ -55,7 +49,6 @@ with st.sidebar:
     
     st.divider()
     
-    # Date filter
     date_range = st.date_input(
         "📅 Select Date Range",
         value=(datetime.now() - timedelta(days=30), datetime.now()),
@@ -75,7 +68,7 @@ if page == "Dashboard":
     total_profit = total_revenue - total_expenses
     total_unpaid = -1250.75
     
-    # Display metrics
+    # Display metrics - FIXED FORMATTING: Use :,.2f NOT :%.2f
     col1, col2, col3, col4 = st.columns(4)
     
     with col1:
@@ -93,7 +86,6 @@ if page == "Dashboard":
     # Recent activity
     st.subheader("Recent Activity")
     
-    # Sample activity data
     activity_data = {
         'Time': ['10:30 AM', '09:15 AM', 'Yesterday', '2 days ago', '3 days ago'],
         'Driver': ['John Smith', 'Maria Garcia', 'Robert Chen', 'Sarah Johnson', 'James Wilson'],
@@ -125,7 +117,7 @@ elif page == "Data Entry":
         
         description = st.text_area("Description")
         
-        # SUBMIT BUTTON
+        # SUBMIT BUTTON - MUST HAVE THIS!
         submitted = st.form_submit_button("💾 Save Transaction")
         
         if submitted:
@@ -133,13 +125,11 @@ elif page == "Data Entry":
                 st.error("Amount must be greater than 0!")
             else:
                 st.success(f"Transaction saved: ${amount:,.2f}")
-                # In real app, save to database here
 
 # ========== BALANCE SUMMARY PAGE ==========
 elif page == "Balance Summary":
     st.title("💰 Balance Summary")
     
-    # Tabs
     tab1, tab2, tab3 = st.tabs(["📊 Overview", "👤 Driver Balances", "📈 Trends"])
     
     with tab1:
@@ -165,18 +155,34 @@ elif page == "Balance Summary":
         
         with col3:
             st.metric("Net Worth", f"${net_worth:,.2f}", delta="+12.5%")
+        
+        # Simple bar chart using Streamlit (no plotly needed)
+        st.subheader("Balance Composition")
+        balance_data = pd.DataFrame({
+            'Category': ['Cash', 'Bank', 'Receivables', 'Payables'],
+            'Amount': [cash_balance, bank_balance, accounts_receivable, abs(accounts_payable)]
+        })
+        st.bar_chart(balance_data.set_index('Category'))
     
     with tab2:
         st.subheader("Driver Balances")
         
-        # Display driver balances
-        st.dataframe(
-            st.session_state.drivers_db[['ID', 'Name', 'Status', 'Balance']].style.format({
-                'Balance': '${:,.2f}'
-            }),
-            use_container_width=True,
-            hide_index=True
-        )
+        # Display driver balances with formatting
+        display_df = st.session_state.drivers_db[['ID', 'Name', 'Status', 'Balance']].copy()
+        
+        # Format balance column
+        def color_balance(val):
+            if val > 0:
+                return 'color: green;'
+            elif val < 0:
+                return 'color: red;'
+            else:
+                return 'color: orange;'
+        
+        styled_df = display_df.style.format({'Balance': '${:,.2f}'})\
+                                   .applymap(color_balance, subset=['Balance'])
+        
+        st.dataframe(styled_df, use_container_width=True, hide_index=True)
         
         # Balance adjustments form
         with st.form("balance_adjust_form"):
@@ -195,7 +201,7 @@ elif page == "Balance Summary":
     with tab3:
         st.subheader("Trend Analysis")
         
-        # Sample trend data
+        # Generate sample trend data
         dates = pd.date_range(start='2023-07-01', end='2024-01-15', freq='W')
         revenue_trend = np.random.normal(20000, 5000, len(dates)).cumsum() + 100000
         
@@ -204,22 +210,19 @@ elif page == "Balance Summary":
             'Revenue': revenue_trend
         })
         
-        # Create chart
-        fig = px.line(df_trend, x='Date', y='Revenue', title="Revenue Trend")
-        st.plotly_chart(fig, use_container_width=True)
+        # Use Streamlit's built-in line chart
+        st.line_chart(df_trend.set_index('Date'))
 
 # ========== DRIVER MANAGEMENT PAGE ==========
 elif page == "Driver Management":
     st.title("👥 Driver Management")
     
-    # Tabs for different actions
     tab1, tab2, tab3 = st.tabs(["📋 View All Drivers", "➕ Add New Driver", "✏️ Edit Driver"])
     
     with tab1:
         st.subheader("All Drivers")
         st.dataframe(st.session_state.drivers_db, use_container_width=True, hide_index=True)
         
-        # Export option
         if st.button("📥 Export to CSV"):
             csv = st.session_state.drivers_db.to_csv(index=False)
             st.download_button("Download CSV", csv, "drivers.csv", "text/csv")
@@ -246,7 +249,6 @@ elif page == "Driver Management":
                 if not new_id or not new_name:
                     st.error("Driver ID and Name are required!")
                 else:
-                    # Add new driver
                     new_driver = pd.DataFrame([{
                         'ID': new_id,
                         'Name': new_name,
@@ -288,7 +290,6 @@ elif page == "Driver Management":
                 submitted_edit = st.form_submit_button("💾 Save Changes")
                 
                 if submitted_edit:
-                    # Update driver in database
                     idx = st.session_state.drivers_db[st.session_state.drivers_db['Name'] == driver_to_edit].index[0]
                     
                     st.session_state.drivers_db.at[idx, 'Name'] = edit_name
@@ -305,7 +306,6 @@ elif page == "Driver Management":
 elif page == "Delete Driver":
     st.title("🗑️ Delete Driver")
     
-    # Display current drivers
     st.subheader("📋 Current Drivers")
     
     if st.session_state.drivers_db.empty:
@@ -313,22 +313,19 @@ elif page == "Delete Driver":
     else:
         st.dataframe(st.session_state.drivers_db, use_container_width=True, hide_index=True)
     
-    # DELETE FORM
+    # DELETE FORM WITH SUBMIT BUTTON
     with st.form("delete_driver_form"):
         st.subheader("🚨 Delete Driver")
         
-        # Get list of drivers for deletion
         driver_options = st.session_state.drivers_db['Name'].tolist()
         
         if driver_options:
             selected_driver = st.selectbox("Select Driver to Delete", driver_options)
             
-            # Get driver details
             driver_data = st.session_state.drivers_db[
                 st.session_state.drivers_db['Name'] == selected_driver
             ].iloc[0]
             
-            # Show warning
             st.warning(f"**You are about to delete:**")
             
             col_info1, col_info2 = st.columns(2)
@@ -339,7 +336,7 @@ elif page == "Delete Driver":
                 st.write(f"**Status:** {driver_data['Status']}")
                 st.write(f"**Balance:** ${driver_data['Balance']:,.2f}")
             
-            # Confirmation
+            # Confirmation checkbox
             confirmation = st.checkbox(
                 "⚠️ I understand this action cannot be undone",
                 value=False
@@ -352,7 +349,7 @@ elif page == "Delete Driver":
             
             notes = st.text_area("Additional Notes")
             
-            # SUBMIT BUTTON (disabled until confirmation)
+            # SUBMIT BUTTON - DISABLED until confirmation
             submitted = st.form_submit_button(
                 "🗑️ Delete Driver Permanently",
                 disabled=not confirmation
@@ -378,7 +375,6 @@ elif page == "Delete Driver":
                 
                 st.success(f"✅ Driver {driver_data['Name']} has been deleted!")
                 
-                # Show confirmation
                 st.info(f"""
                 **Deletion Details:**
                 - **Time:** {deletion_log['timestamp']}
