@@ -429,8 +429,3 @@ elif page == "Settings":
 # ========== FOOTER ==========
 st.divider()
 st.caption("Taxi Manager Pro © 2024 | All data is stored locally in your session")
-
-
-
-
-
