@@ -1,0 +1,1222 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Cascade Taxi Ride | Book Your Taxi</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Square Payment SDK -->
+    <script src="https://sandbox.web.squarecdn.com/v1/square.js"></script>
+    <!-- For Production: https://web.squarecdn.com/v1/square.js -->
+    <style>
+        /* ===== RESET & BASE STYLES ===== */
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, sans-serif;
+            line-height: 1.6;
+            color: #333;
+            background-color: #f8f9fa;
+        }
+
+        .container {
+            width: 100%;
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 0 20px;
+        }
+
+        /* ===== HEADER & NAVIGATION ===== */
+        header {
+            background: white;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            z-index: 1000;
+        }
+
+        nav {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 1rem 0;
+        }
+
+        .logo {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            font-size: 1.8rem;
+            font-weight: 700;
+            color: #2c3e50;
+        }
+
+        .logo i {
+            color: #3498db;
+            font-size: 2rem;
+        }
+
+        .nav-links {
+            display: flex;
+            gap: 2rem;
+            list-style: none;
+        }
+
+        .nav-links a {
+            text-decoration: none;
+            color: #2c3e50;
+            font-weight: 600;
+            font-size: 1rem;
+            transition: color 0.3s;
+        }
+
+        .nav-links a:hover {
+            color: #3498db;
+        }
+
+        .mobile-menu-btn {
+            display: none;
+            background: none;
+            border: none;
+            font-size: 1.5rem;
+            cursor: pointer;
+            color: #2c3e50;
+        }
+
+        /* ===== HERO SECTION ===== */
+        .hero {
+            background: linear-gradient(135deg, #3498db 0%, #2ecc71 100%);
+            color: white;
+            padding: 160px 0 100px;
+            text-align: center;
+            margin-top: 60px;
+        }
+
+        .hero h1 {
+            font-size: 3.5rem;
+            margin-bottom: 1.5rem;
+            font-weight: 800;
+            line-height: 1.2;
+        }
+
+        .hero p {
+            font-size: 1.25rem;
+            max-width: 700px;
+            margin: 0 auto 2.5rem;
+            opacity: 0.95;
+        }
+
+        .cta-button {
+            display: inline-block;
+            background: #f39c12;
+            color: white;
+            padding: 1rem 2.5rem;
+            border-radius: 50px;
+            text-decoration: none;
+            font-weight: 700;
+            font-size: 1.1rem;
+            transition: all 0.3s;
+            border: none;
+            cursor: pointer;
+        }
+
+        .cta-button:hover {
+            background: #e67e22;
+            transform: translateY(-3px);
+            box-shadow: 0 10px 20px rgba(0,0,0,0.2);
+        }
+
+        .cta-button:disabled {
+            background: #95a5a6;
+            cursor: not-allowed;
+            transform: none;
+            box-shadow: none;
+        }
+
+        /* ===== BOOKING SECTION ===== */
+        .booking-section {
+            padding: 5rem 0;
+            background: white;
+        }
+
+        .section-title {
+            text-align: center;
+            margin-bottom: 3rem;
+        }
+
+        .section-title h2 {
+            font-size: 2.8rem;
+            color: #2c3e50;
+            margin-bottom: 1rem;
+        }
+
+        .section-title p {
+            color: #7f8c8d;
+            font-size: 1.1rem;
+            max-width: 600px;
+            margin: 0 auto;
+        }
+
+        .booking-form {
+            background: #f8f9fa;
+            border-radius: 20px;
+            padding: 3rem;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.08);
+        }
+
+        .form-row {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 1.5rem;
+            margin-bottom: 2rem;
+        }
+
+        .form-group {
+            flex: 1;
+            min-width: 250px;
+        }
+
+        .form-group label {
+            display: block;
+            margin-bottom: 0.5rem;
+            font-weight: 600;
+            color: #2c3e50;
+            font-size: 1rem;
+        }
+
+        .form-control {
+            width: 100%;
+            padding: 1rem;
+            border: 2px solid #e0e0e0;
+            border-radius: 10px;
+            font-size: 1rem;
+            transition: border-color 0.3s;
+        }
+
+        .form-control:focus {
+            outline: none;
+            border-color: #3498db;
+        }
+
+        .form-options {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 1rem;
+            margin-top: 1rem;
+        }
+
+        .option-btn {
+            flex: 1;
+            min-width: 200px;
+            padding: 1.5rem;
+            background: white;
+            border: 2px solid #e0e0e0;
+            border-radius: 15px;
+            cursor: pointer;
+            transition: all 0.3s;
+            text-align: left;
+        }
+
+        .option-btn:hover {
+            border-color: #3498db;
+            transform: translateY(-2px);
+        }
+
+        .option-btn.active {
+            background: #3498db;
+            color: white;
+            border-color: #3498db;
+        }
+
+        .option-btn i {
+            font-size: 2rem;
+            margin-bottom: 0.5rem;
+            display: block;
+        }
+
+        .option-btn .taxi-name {
+            font-weight: 700;
+            font-size: 1.2rem;
+            margin-bottom: 0.25rem;
+        }
+
+        .option-btn .taxi-desc {
+            font-size: 0.9rem;
+            opacity: 0.9;
+        }
+
+        /* ===== PAYMENT SECTION ===== */
+        .payment-section {
+            padding: 5rem 0;
+            background: #f0f7ff;
+        }
+
+        .payment-container {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 3rem;
+        }
+
+        .payment-form {
+            flex: 1;
+            min-width: 300px;
+            background: white;
+            padding: 3rem;
+            border-radius: 20px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.08);
+        }
+
+        .payment-info {
+            flex: 1;
+            min-width: 300px;
+        }
+
+        .payment-info h3 {
+            font-size: 2rem;
+            color: #2c3e50;
+            margin-bottom: 1.5rem;
+        }
+
+        .payment-info ul {
+            list-style: none;
+            margin-bottom: 2rem;
+        }
+
+        .payment-info li {
+            margin-bottom: 1rem;
+            padding-left: 2rem;
+            position: relative;
+        }
+
+        .payment-info li i {
+            position: absolute;
+            left: 0;
+            top: 0.25rem;
+            color: #2ecc71;
+        }
+
+        .fare-display {
+            background: #f8f9fa;
+            padding: 1.5rem;
+            border-radius: 15px;
+            margin-bottom: 2rem;
+            border-left: 5px solid #3498db;
+        }
+
+        .fare-display h4 {
+            color: #2c3e50;
+            margin-bottom: 0.5rem;
+        }
+
+        .fare-amount {
+            font-size: 2.5rem;
+            font-weight: 800;
+            color: #3498db;
+            text-align: right;
+        }
+
+        /* Square Payment Form Styles */
+        .square-payment-container {
+            margin: 2rem 0;
+        }
+
+        #card-container {
+            width: 100%;
+            min-height: 50px;
+            margin: 1rem 0;
+            padding: 1rem;
+            border: 2px solid #e0e0e0;
+            border-radius: 10px;
+            background: white;
+        }
+
+        #card-container.square-focus {
+            border-color: #3498db;
+            box-shadow: 0 0 0 3px rgba(52, 152, 219, 0.1);
+        }
+
+        .payment-actions {
+            display: flex;
+            gap: 1rem;
+            margin-top: 1.5rem;
+        }
+
+        .payment-btn {
+            flex: 1;
+            padding: 1rem;
+            border: none;
+            border-radius: 10px;
+            font-weight: 600;
+            font-size: 1rem;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+
+        .payment-btn.primary {
+            background: #3498db;
+            color: white;
+        }
+
+        .payment-btn.primary:hover:not(:disabled) {
+            background: #2980b9;
+        }
+
+        .payment-btn.secondary {
+            background: #ecf0f1;
+            color: #2c3e50;
+        }
+
+        .payment-btn.secondary:hover {
+            background: #bdc3c7;
+        }
+
+        .payment-btn:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+        }
+
+        /* Payment Status Messages */
+        .payment-status {
+            margin-top: 1.5rem;
+            padding: 1rem;
+            border-radius: 10px;
+            display: none;
+        }
+
+        .payment-status.show {
+            display: block;
+            animation: fadeIn 0.5s;
+        }
+
+        .payment-status.success {
+            background: #d4edda;
+            color: #155724;
+            border: 1px solid #c3e6cb;
+        }
+
+        .payment-status.error {
+            background: #f8d7da;
+            color: #721c24;
+            border: 1px solid #f5c6cb;
+        }
+
+        .payment-status.processing {
+            background: #cce5ff;
+            color: #004085;
+            border: 1px solid #b8daff;
+        }
+
+        /* Accepted Cards */
+        .accepted-cards {
+            display: flex;
+            gap: 1rem;
+            margin: 2rem 0;
+            flex-wrap: wrap;
+        }
+
+        .card-logo {
+            width: 70px;
+            height: 45px;
+            background: white;
+            border-radius: 8px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 600;
+            color: #555;
+            box-shadow: 0 3px 10px rgba(0,0,0,0.1);
+            font-size: 0.9rem;
+        }
+
+        /* Receipt */
+        .receipt {
+            background: white;
+            padding: 2rem;
+            border-radius: 15px;
+            margin-top: 2rem;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+            display: none;
+        }
+
+        .receipt.show {
+            display: block;
+            animation: slideIn 0.5s;
+        }
+
+        .receipt h4 {
+            color: #3498db;
+            margin-bottom: 1rem;
+            padding-bottom: 0.5rem;
+            border-bottom: 2px solid #f0f0f0;
+        }
+
+        .receipt-line {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 0.5rem;
+            padding-bottom: 0.5rem;
+            border-bottom: 1px dashed #eee;
+        }
+
+        .receipt-line.total {
+            font-weight: bold;
+            font-size: 1.2rem;
+            border-bottom: 2px solid #3498db;
+            padding-top: 0.5rem;
+            margin-top: 0.5rem;
+        }
+
+        /* Loading Spinner */
+        .spinner {
+            display: inline-block;
+            width: 20px;
+            height: 20px;
+            border: 3px solid rgba(255,255,255,.3);
+            border-radius: 50%;
+            border-top-color: white;
+            animation: spin 1s ease-in-out infinite;
+        }
+
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; }
+            to { opacity: 1; }
+        }
+
+        @keyframes slideIn {
+            from { transform: translateY(-20px); opacity: 0; }
+            to { transform: translateY(0); opacity: 1; }
+        }
+
+        /* ===== CALCULATE BUTTON ===== */
+        .calculate-btn {
+            width: 100%;
+            margin-top: 2rem;
+            padding: 1.2rem;
+            font-size: 1.1rem;
+        }
+
+        /* ===== RESPONSIVE DESIGN ===== */
+        @media (max-width: 768px) {
+            .hero {
+                padding: 120px 0 80px;
+            }
+
+            .hero h1 {
+                font-size: 2.5rem;
+            }
+
+            .nav-links {
+                display: none;
+                position: absolute;
+                top: 100%;
+                left: 0;
+                right: 0;
+                background: white;
+                flex-direction: column;
+                padding: 1rem;
+                box-shadow: 0 10px 20px rgba(0,0,0,0.1);
+            }
+
+            .nav-links.active {
+                display: flex;
+            }
+
+            .mobile-menu-btn {
+                display: block;
+            }
+
+            .booking-form,
+            .payment-form {
+                padding: 2rem;
+            }
+
+            .section-title h2 {
+                font-size: 2.2rem;
+            }
+
+            .payment-actions {
+                flex-direction: column;
+            }
+        }
+
+        @media (max-width: 480px) {
+            .hero h1 {
+                font-size: 2rem;
+            }
+
+            .form-options {
+                flex-direction: column;
+            }
+
+            .option-btn {
+                min-width: 100%;
+            }
+        }
+    </style>
+</head>
+<body>
+    <!-- Header -->
+    <header>
+        <div class="container">
+            <nav>
+                <div class="logo">
+                    <i class="fas fa-car"></i>
+                    <span>Cascade Taxi Ride</span>
+                </div>
+                <button class="mobile-menu-btn">
+                    <i class="fas fa-bars"></i>
+                </button>
+                <ul class="nav-links">
+                    <li><a href="#home">Home</a></li>
+                    <li><a href="#booking">Book Ride</a></li>
+                    <li><a href="#payment">Payment</a></li>
+                    <li><a href="#contact">Contact</a></li>
+                </ul>
+            </nav>
+        </div>
+    </header>
+
+    <!-- Hero Section -->
+    <section class="hero" id="home">
+        <div class="container">
+            <h1>Your Reliable Ride, Anytime, Anywhere</h1>
+            <p>Safe, comfortable, and affordable taxi services with professional drivers. Book your ride in seconds and pay securely with any credit card.</p>
+            <a href="#booking" class="cta-button">Book Your Ride Now</a>
+        </div>
+    </section>
+
+    <!-- Booking Form -->
+    <section class="booking-section" id="booking">
+        <div class="container">
+            <div class="section-title">
+                <h2>Book Your Taxi</h2>
+                <p>Enter your trip details and get an instant price estimate</p>
+            </div>
+            
+            <div class="booking-form">
+                <form id="bookingForm">
+                    <!-- Row 1: Pickup & Drop-off -->
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="pickup">
+                                <i class="fas fa-map-marker-alt"></i> Pickup Location
+                            </label>
+                            <input type="text" id="pickup" class="form-control" placeholder="Enter pickup address" required>
+                        </div>
+                        <div class="form-group">
+                            <label for="dropoff">
+                                <i class="fas fa-flag-checkered"></i> Drop-off Location
+                            </label>
+                            <input type="text" id="dropoff" class="form-control" placeholder="Enter destination" required>
+                        </div>
+                    </div>
+                    
+                    <!-- Row 2: Date & Time -->
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="date">
+                                <i class="far fa-calendar-alt"></i> Pickup Date
+                            </label>
+                            <input type="date" id="date" class="form-control" required>
+                        </div>
+                        <div class="form-group">
+                            <label for="time">
+                                <i class="far fa-clock"></i> Pickup Time
+                            </label>
+                            <input type="time" id="time" class="form-control" required>
+                        </div>
+                    </div>
+                    
+                    <!-- Taxi Type Selection -->
+                    <div class="form-group">
+                        <label><i class="fas fa-car"></i> Select Taxi Type</label>
+                        <div class="form-options">
+                            <div class="option-btn active" data-type="standard" data-price="28">
+                                <i class="fas fa-car"></i>
+                                <div>
+                                    <div class="taxi-name">Standard Taxi</div>
+                                    <div class="taxi-desc">Up to 4 passengers - $28 base</div>
+                                </div>
+                            </div>
+                            <div class="option-btn" data-type="van" data-price="45">
+                                <i class="fas fa-shuttle-van"></i>
+                                <div>
+                                    <div class="taxi-name">Family Van</div>
+                                    <div class="taxi-desc">Up to 8 passengers - $45 base</div>
+                                </div>
+                            </div>
+                            <div class="option-btn" data-type="luxury" data-price="65">
+                                <i class="fas fa-car-side"></i>
+                                <div>
+                                    <div class="taxi-name">Luxury Sedan</div>
+                                    <div class="taxi-desc">Premium comfort - $65 base</div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Row 3: Name & Phone -->
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="name">
+                                <i class="far fa-user"></i> Full Name
+                            </label>
+                            <input type="text" id="name" class="form-control" placeholder="Your full name" required>
+                        </div>
+                        <div class="form-group">
+                            <label for="phone">
+                                <i class="fas fa-phone"></i> Phone Number
+                            </label>
+                            <input type="tel" id="phone" class="form-control" placeholder="Your phone number" required>
+                        </div>
+                    </div>
+                    
+                    <!-- Row 4: Email -->
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="email">
+                                <i class="far fa-envelope"></i> Email Address
+                            </label>
+                            <input type="email" id="email" class="form-control" placeholder="Your email for receipt" required>
+                        </div>
+                    </div>
+                    
+                    <!-- Calculate Button -->
+                    <button type="button" id="calculateFare" class="cta-button calculate-btn">
+                        <i class="fas fa-calculator"></i> Calculate Fare & Continue to Payment
+                    </button>
+                </form>
+            </div>
+        </div>
+    </section>
+
+    <!-- Payment Section -->
+    <section class="payment-section" id="payment">
+        <div class="container">
+            <div class="section-title">
+                <h2>Secure Payment</h2>
+                <p>Pay securely with any credit card via Square payment processing</p>
+            </div>
+            
+            <div class="payment-container">
+                <div class="payment-form">
+                    <h3>Payment Details</h3>
+                    
+                    <div class="fare-display">
+                        <div>
+                            <h4>Estimated Fare</h4>
+                            <small id="tripDetails">Complete booking form first</small>
+                        </div>
+                        <div class="fare-amount" id="fareAmount">$0.00</div>
+                    </div>
+                    
+                    <!-- Accepted Cards -->
+                    <div class="accepted-cards">
+                        <div class="card-logo">VISA</div>
+                        <div class="card-logo">MASTERCARD</div>
+                        <div class="card-logo">AMEX</div>
+                        <div class="card-logo">DISCOVER</div>
+                    </div>
+                    
+                    <!-- Square Payment Container -->
+                    <div class="square-payment-container">
+                        <div id="card-container"></div>
+                        
+                        <div class="payment-actions">
+                            <button id="card-button" class="payment-btn primary" disabled>
+                                <i class="fas fa-lock"></i> Pay Now
+                            </button>
+                            <button id="reset-button" class="payment-btn secondary">
+                                <i class="fas fa-redo"></i> Reset
+                            </button>
+                        </div>
+                    </div>
+                    
+                    <!-- Payment Status -->
+                    <div id="payment-status" class="payment-status"></div>
+                    
+                    <!-- Receipt -->
+                    <div id="receipt" class="receipt">
+                        <h4><i class="fas fa-receipt"></i> Booking Confirmation</h4>
+                        <div class="receipt-line">
+                            <span>Trip Fare:</span>
+                            <span id="receipt-fare">$0.00</span>
+                        </div>
+                        <div class="receipt-line">
+                            <span>Service Fee:</span>
+                            <span>$2.50</span>
+                        </div>
+                        <div class="receipt-line">
+                            <span>Tax (8%):</span>
+                            <span id="receipt-tax">$0.00</span>
+                        </div>
+                        <div class="receipt-line total">
+                            <span>Total Paid:</span>
+                            <span id="receipt-total">$0.00</span>
+                        </div>
+                        <div class="payment-details">
+                            <p><strong>Booking ID:</strong> <span id="booking-id">CTR-0000</span></p>
+                            <p><strong>Payment Date:</strong> <span id="payment-date">N/A</span></p>
+                            <p>Your booking is confirmed! We'll contact you at the pickup time.</p>
+                        </div>
+                    </div>
+                    
+                    <div style="margin-top: 2rem; font-size: 0.9rem; color: #7f8c8d; text-align: center;">
+                        <p><i class="fas fa-shield-alt"></i> Secured by Square | <i class="fas fa-lock"></i> PCI Compliant</p>
+                    </div>
+                </div>
+                
+                <div class="payment-info">
+                    <h3>Why Pay With Square?</h3>
+                    <ul>
+                        <li><i class="fas fa-shield-alt"></i> <strong>Bank-Level Security:</strong> All transactions are encrypted</li>
+                        <li><i class="fas fa-credit-card"></i> <strong>All Cards Accepted:</strong> Visa, Mastercard, Amex, Discover</li>
+                        <li><i class="fas fa-bolt"></i> <strong>Instant Processing:</strong> Payments processed in real-time</li>
+                        <li><i class="fas fa-receipt"></i> <strong>Digital Receipts:</strong> Sent automatically to your email</li>
+                        <li><i class="fas fa-headset"></i> <strong>24/7 Support:</strong> Square support available anytime</li>
+                        <li><i class="fas fa-money-bill-wave"></i> <strong>No Hidden Fees:</strong> The price you see is what you pay</li>
+                    </ul>
+                    
+                    <div style="margin-top: 2rem; padding: 1.5rem; background: white; border-radius: 15px; box-shadow: 0 5px 15px rgba(0,0,0,0.05);">
+                        <h4><i class="fas fa-question-circle"></i> Need Help?</h4>
+                        <p style="margin-top: 0.5rem; font-size: 1rem;">Call Square Support: <strong style="color: #3498db;">1-800-SQUARE-1</strong></p>
+                        <p style="margin-top: 0.25rem; font-size: 0.9rem; color: #7f8c8d;">Or email: support@squareup.com</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Footer -->
+    <footer id="contact" style="background: #2c3e50; color: white; padding: 3rem 0; margin-top: 3rem;">
+        <div class="container">
+            <div style="display: flex; flex-wrap: wrap; gap: 2rem; margin-bottom: 2rem;">
+                <div style="flex: 1; min-width: 250px;">
+                    <h3 style="color: #f39c12; margin-bottom: 1rem;">Cascade Taxi Ride</h3>
+                    <p>Your reliable transportation partner. Safe, comfortable, and affordable rides available 24/7.</p>
+                </div>
+                
+                <div style="flex: 1; min-width: 250px;">
+                    <h3 style="color: #f39c12; margin-bottom: 1rem;">Contact Us</h3>
+                    <ul style="list-style: none;">
+                        <li><i class="fas fa-phone"></i> 1-800-CASCADE-RIDE</li>
+                        <li><i class="fas fa-envelope"></i> bookings@cascadetaxiride.com</li>
+                        <li><i class="fas fa-map-marker-alt"></i> Serving Metro Area</li>
+                    </ul>
+                </div>
+            </div>
+            
+            <div style="text-align: center; padding-top: 2rem; border-top: 1px solid rgba(255,255,255,0.1);">
+                <p>&copy; 2023 Cascade Taxi Ride. Payments processed by Square, Inc.</p>
+            </div>
+        </div>
+    </footer>
+
+    <script>
+        // ===== SQUARE CREDENTIALS PLACEHOLDER =====
+        // REPLACE THESE WITH YOUR ACTUAL SQUARE CREDENTIALS
+        const SQUARE_CONFIG = {
+            // === YOUR SQUARE APPLICATION ID ===
+            // Get this from: https://developer.squareup.com/apps
+            // Sandbox: starts with "sandbox-sq0idb-"
+            // Production: starts with "sq0idp-"
+            applicationId: 'sandbox-sq0idb-cB_JYTRpz040InxvX14BHA',            
+            // === YOUR SQUARE LOCATION ID ===
+            // Get this from Square Dashboard → Locations
+            locationId: 'LKWB32DHZPZDH',
+            
+            // === ENVIRONMENT ===
+            // 'sandbox' for testing, 'production' for real payments
+            environment: 'sandbox', // Change to 'production' when ready
+            
+            // === SANDBOX TEST CARDS ===
+            // Use these for testing in sandbox mode:
+            // - Successful: 4111 1111 1111 1111
+            // - Declined: 4000 0000 0000 0002
+            // - Mastercard: 5555 5555 5555 4444
+            // - Amex: 3782 822463 10005
+            // - Discover: 6011 1111 1111 1117
+            // CVV: 123, Expiry: Any future date
+        };
+
+        // Global variables
+        let squarePayments = null;
+        let squareCard = null;
+        let currentFare = 0;
+        let bookingData = {};
+
+        // ===== INITIALIZATION =====
+        document.addEventListener('DOMContentLoaded', function() {
+            initializeBookingForm();
+            initializeSquare();
+            setupEventListeners();
+        });
+
+        // ===== BOOKING FORM FUNCTIONS =====
+        function initializeBookingForm() {
+            // Set minimum date to today
+            const today = new Date().toISOString().split('T')[0];
+            document.getElementById('date').min = today;
+            document.getElementById('date').value = today;
+
+            // Set default time to next hour
+            const now = new Date();
+            const nextHour = new Date(now.getTime() + 60 * 60 * 1000);
+            const timeString = nextHour.getHours().toString().padStart(2, '0') + ':' + 
+                              nextHour.getMinutes().toString().padStart(2, '0');
+            document.getElementById('time').value = timeString;
+        }
+
+        // Taxi type selection
+        function setupEventListeners() {
+            // Mobile menu
+            document.querySelector('.mobile-menu-btn').addEventListener('click', function() {
+                document.querySelector('.nav-links').classList.toggle('active');
+            });
+
+            // Close mobile menu when clicking links
+            document.querySelectorAll('.nav-links a').forEach(link => {
+                link.addEventListener('click', () => {
+                    document.querySelector('.nav-links').classList.remove('active');
+                });
+            });
+
+            // Taxi type buttons
+            document.querySelectorAll('.option-btn').forEach(button => {
+                button.addEventListener('click', function() {
+                    document.querySelectorAll('.option-btn').forEach(btn => {
+                        btn.classList.remove('active');
+                    });
+                    this.classList.add('active');
+                });
+            });
+
+            // Calculate fare button
+            document.getElementById('calculateFare').addEventListener('click', calculateFare);
+
+            // Pay button
+            document.getElementById('card-button').addEventListener('click', processPayment);
+
+            // Reset button
+            document.getElementById('reset-button').addEventListener('click', resetPayment);
+
+            // Smooth scrolling
+            document.querySelectorAll('a[href^="#"]').forEach(anchor => {
+                anchor.addEventListener('click', function(e) {
+                    const href = this.getAttribute('href');
+                    if (href === '#') return;
+                    
+                    e.preventDefault();
+                    const target = document.querySelector(href);
+                    if (target) {
+                        window.scrollTo({
+                            top: target.offsetTop - 80,
+                            behavior: 'smooth'
+                        });
+                    }
+                });
+            });
+        }
+
+        // ===== SQUARE PAYMENT INITIALIZATION =====
+        async function initializeSquare() {
+            try {
+                console.log('Initializing Square payment...');
+                
+                // Check if Square SDK is loaded
+                if (typeof Square === 'undefined') {
+                    throw new Error('Square SDK failed to load. Check your internet connection.');
+                }
+
+                // Check if credentials are set
+                if (!SQUARE_CONFIG.applicationId || !SQUARE_CONFIG.locationId) {
+                    console.warn('Square credentials not set. Using simulation mode.');
+                    showPaymentStatus('warning', 'Payment system in demo mode. Add your Square credentials to enable real payments.');
+                    return;
+                }
+
+                // Initialize Square Payments
+                squarePayments = Square.payments(
+                    SQUARE_CONFIG.applicationId,
+                    SQUARE_CONFIG.locationId
+                );
+
+                // Create card payment
+                squareCard = await squarePayments.card();
+                
+                // Attach card form to container
+                await squareCard.attach('#card-container');
+                
+                // Add focus styles
+                squareCard.addEventListener('focus', () => {
+                    document.getElementById('card-container').classList.add('square-focus');
+                });
+                
+                squareCard.addEventListener('blur', () => {
+                    document.getElementById('card-container').classList.remove('square-focus');
+                });
+                
+                console.log('Square payment initialized successfully');
+                
+            } catch (error) {
+                console.error('Error initializing Square:', error);
+                showPaymentStatus('error', `Payment system error: ${error.message}. Using simulation mode.`);
+            }
+        }
+
+        // ===== FARE CALCULATION =====
+        function calculateFare() {
+            // Validate form
+            if (!validateBookingForm()) {
+                showPaymentStatus('error', 'Please fill in all required fields correctly.');
+                return;
+            }
+
+            // Get booking data
+            bookingData = {
+                pickup: document.getElementById('pickup').value,
+                dropoff: document.getElementById('dropoff').value,
+                date: document.getElementById('date').value,
+                time: document.getElementById('time').value,
+                name: document.getElementById('name').value,
+                phone: document.getElementById('phone').value,
+                email: document.getElementById('email').value,
+                taxiType: document.querySelector('.option-btn.active').dataset.type,
+                basePrice: parseFloat(document.querySelector('.option-btn.active').dataset.price)
+            };
+
+            // Calculate fare
+            const distanceCharge = Math.floor(Math.random() * 35) + 15; // $15-50
+            const serviceFee = 2.50;
+            const tax = (bookingData.basePrice + distanceCharge) * 0.08; // 8% tax
+            
+            currentFare = bookingData.basePrice + distanceCharge + serviceFee + tax;
+
+            // Update display
+            document.getElementById('fareAmount').textContent = `$${currentFare.toFixed(2)}`;
+            document.getElementById('tripDetails').textContent = 
+                `${bookingData.taxiType.charAt(0).toUpperCase() + bookingData.taxiType.slice(1)} from ${bookingData.pickup.substring(0, 20)}...`;
+
+            // Enable payment button
+            document.getElementById('card-button').disabled = false;
+
+            // Scroll to payment section
+            document.getElementById('payment').scrollIntoView({ behavior: 'smooth' });
+
+            // Show success message
+            showPaymentStatus('success', `Your estimated fare is $${currentFare.toFixed(2)}. Ready for payment.`);
+        }
+
+        function validateBookingForm() {
+            const requiredFields = ['pickup', 'dropoff', 'name', 'phone', 'email'];
+            let isValid = true;
+            
+            requiredFields.forEach(fieldId => {
+                const field = document.getElementById(fieldId);
+                if (!field.value.trim()) {
+                    field.style.borderColor = '#e74c3c';
+                    isValid = false;
+                } else {
+                    field.style.borderColor = '#e0e0e0';
+                }
+            });
+
+            // Email validation
+            const emailField = document.getElementById('email');
+            const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+            if (emailField.value && !emailRegex.test(emailField.value)) {
+                emailField.style.borderColor = '#e74c3c';
+                isValid = false;
+            }
+
+            return isValid;
+        }
+
+        // ===== PAYMENT PROCESSING =====
+        async function processPayment() {
+            if (currentFare <= 0) {
+                showPaymentStatus('error', 'Please calculate your fare first.');
+                return;
+            }
+
+            const payButton = document.getElementById('card-button');
+            payButton.innerHTML = '<span class="spinner"></span> Processing...';
+            payButton.disabled = true;
+
+            // Check if Square is initialized
+            if (!squareCard || !SQUARE_CONFIG.applicationId) {
+                // Use simulation mode
+                await simulatePayment();
+                return;
+            }
+
+            try {
+                // Tokenize card details
+                const tokenResult = await squareCard.tokenize();
+                
+                if (tokenResult.status === 'OK') {
+                    // In a real implementation, you would send the token to your backend
+                    // For GitHub Pages, we'll simulate the backend call
+                    const paymentResult = await processPaymentOnBackend(tokenResult.token);
+                    
+                    if (paymentResult.success) {
+                        showReceipt(paymentResult);
+                        showPaymentStatus('success', 'Payment successful! Booking confirmed.', false);
+                        payButton.innerHTML = '<i class="fas fa-check"></i> Paid';
+                        payButton.disabled = true;
+                    } else {
+                        throw new Error(paymentResult.message);
+                    }
+                } else {
+                    throw new Error('Card tokenization failed');
+                }
+            } catch (error) {
+                console.error('Payment error:', error);
+                showPaymentStatus('error', `Payment failed: ${error.message}. Please try again.`);
+                
+                payButton.innerHTML = '<i class="fas fa-lock"></i> Pay Now';
+                payButton.disabled = false;
+            }
+        }
+
+        async function simulatePayment() {
+            // Simulate payment processing delay
+            await new Promise(resolve => setTimeout(resolve, 2000));
+            
+            // Simulate 90% success rate
+            const isSuccess = Math.random() > 0.1;
+            
+            if (isSuccess) {
+                const paymentResult = {
+                    success: true,
+                    transactionId: 'SIM-' + Date.now(),
+                    bookingId: 'CTR-' + Date.now().toString().substr(-6),
+                    amount: currentFare,
+                    timestamp: new Date().toISOString()
+                };
+                
+                showReceipt(paymentResult);
+                showPaymentStatus('success', 'Payment simulation successful! In production, this would process through Square.', false);
+                
+                const payButton = document.getElementById('card-button');
+                payButton.innerHTML = '<i class="fas fa-check"></i> Paid';
+                payButton.disabled = true;
+            } else {
+                showPaymentStatus('error', 'Payment simulation failed. In production, this would show actual payment errors.');
+                
+                const payButton = document.getElementById('card-button');
+                payButton.innerHTML = '<i class="fas fa-lock"></i> Pay Now';
+                payButton.disabled = false;
+            }
+        }
+
+        async function processPaymentOnBackend(token) {
+            // This function simulates what your backend would do
+            // In production, you would send the token to your server
+            // which would then call Square's API
+            
+            return new Promise(resolve => {
+                setTimeout(() => {
+                    // Simulate API call
+                    const isSuccess = Math.random() > 0.1; // 90% success rate
+                    
+                    if (isSuccess) {
+                        resolve({
+                            success: true,
+                            transactionId: 'SQ-' + Date.now(),
+                            bookingId: 'CTR-' + Date.now().toString().substr(-6),
+                            amount: currentFare,
+                            timestamp: new Date().toISOString(),
+                            message: 'Payment processed successfully'
+                        });
+                    } else {
+                        resolve({
+                            success: false,
+                            message: 'Card declined. Please try another payment method.'
+                        });
+                    }
+                }, 1500);
+            });
+        }
+
+        // ===== RECEIPT & STATUS FUNCTIONS =====
+        function showReceipt(paymentResult) {
+            // Calculate breakdown
+            const fare = currentFare - 2.50;
+            const tax = fare * 0.08;
+            const serviceFee = 2.50;
+            const total = fare + tax + serviceFee;
+            
+            // Update receipt
+            document.getElementById('receipt-fare').textContent = `$${fare.toFixed(2)}`;
+            document.getElementById('receipt-tax').textContent = `$${tax.toFixed(2)}`;
+            document.getElementById('receipt-total').textContent = `$${total.toFixed(2)}`;
+            document.getElementById('booking-id').textContent = paymentResult.bookingId;
+            document.getElementById('payment-date').textContent = new Date().toLocaleString();
+            
+            // Show receipt
+            document.getElementById('receipt').classList.add('show');
+        }
+
+        function showPaymentStatus(type, message, showContainer = true) {
+            const statusContainer = document.getElementById('payment-status');
+            statusContainer.className = 'payment-status';
+            statusContainer.innerHTML = '';
+            
+            const icon = type === 'success' ? 'fa-check-circle' : 
+                         type === 'error' ? 'fa-exclamation-circle' : 
+                         type === 'warning' ? 'fa-exclamation-triangle' : 'fa-info-circle';
+            
+            statusContainer.innerHTML = `<i class="fas ${icon}"></i> ${message}`;
+            statusContainer.classList.add(type);
+            
+            if (showContainer) {
+                statusContainer.classList.add('show');
+            }
+            
+            // Auto-hide success messages
+            if (type === 'success') {
+                setTimeout(() => {
+                    statusContainer.classList.remove('show');
+                }, 5000);
+            }
+        }
+
+        function resetPayment() {
+            currentFare = 0;
+            bookingData = {};
+            
+            document.getElementById('fareAmount').textContent = '$0.00';
+            document.getElementById('tripDetails').textContent = 'Complete booking form first';
+            
+            const payButton = document.getElementById('card-button');
+            payButton.innerHTML = '<i class="fas fa-lock"></i> Pay Now';
+            payButton.disabled = true;
+            
+            document.getElementById('receipt').classList.remove('show');
+            document.getElementById('payment-status').classList.remove('show');
+            
+            document.getElementById('booking').scrollIntoView({ behavior: 'smooth' });
+        }
+
+        // ===== FOR TESTING =====
+        // Uncomment to test without Square credentials
+        window.enableTestMode = function() {
+            SQUARE_CONFIG.applicationId = 'sandbox-sq0idb-test';
+            SQUARE_CONFIG.locationId = 'test-location';
+            initializeSquare();
+            showPaymentStatus('success', 'Test mode enabled. You can now test the payment flow.');
+        };
+    </script>
+</body>
+</html>
