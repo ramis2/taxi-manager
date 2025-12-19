@@ -1,0 +1,1920 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Cascade Taxi Ride | Book Your Taxi</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Square Payment SDK -->
+    <script src="https://sandbox.web.squarecdn.com/v1/square.js"></script>
+    <style>
+        /* ===== RESET & BASE STYLES ===== */
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, sans-serif;
+            line-height: 1.6;
+            color: #333;
+            background-color: #f8f9fa;
+        }
+
+        .container {
+            width: 100%;
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 0 20px;
+        }
+
+        /* ===== HEADER & NAVIGATION ===== */
+        header {
+            background: white;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            z-index: 1000;
+        }
+
+        nav {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 1rem 0;
+        }
+
+        .logo {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            font-size: 1.8rem;
+            font-weight: 700;
+            color: #2c3e50;
+        }
+
+        .logo i {
+            color: #3498db;
+            font-size: 2rem;
+        }
+
+        .nav-links {
+            display: flex;
+            align-items: center;
+            gap: 2rem;
+            list-style: none;
+        }
+
+        .nav-links a {
+            text-decoration: none;
+            color: #2c3e50;
+            font-weight: 600;
+            font-size: 1rem;
+            transition: color 0.3s;
+        }
+
+        .nav-links a:hover {
+            color: #3498db;
+        }
+
+        /* User Profile in Nav */
+        .user-profile {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+            padding: 0.5rem 1rem;
+            background: #f8f9fa;
+            border-radius: 50px;
+            cursor: pointer;
+            position: relative;
+        }
+
+        .user-avatar {
+            width: 40px;
+            height: 40px;
+            background: #3498db;
+            color: white;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: bold;
+            font-size: 1.2rem;
+        }
+
+        .user-name {
+            font-weight: 600;
+            color: #2c3e50;
+        }
+
+        .user-dropdown {
+            position: absolute;
+            top: 100%;
+            right: 0;
+            background: white;
+            min-width: 200px;
+            box-shadow: 0 5px 20px rgba(0,0,0,0.1);
+            border-radius: 10px;
+            padding: 0.5rem 0;
+            display: none;
+            z-index: 1000;
+        }
+
+        .user-dropdown.show {
+            display: block;
+            animation: fadeIn 0.3s;
+        }
+
+        .user-dropdown a {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+            padding: 0.75rem 1.5rem;
+            color: #2c3e50;
+            text-decoration: none;
+            transition: background 0.3s;
+        }
+
+        .user-dropdown a:hover {
+            background: #f8f9fa;
+        }
+
+        .user-dropdown a i {
+            width: 20px;
+            color: #7f8c8d;
+        }
+
+        .auth-buttons {
+            display: flex;
+            gap: 1rem;
+        }
+
+        .auth-btn {
+            padding: 0.5rem 1.5rem;
+            border-radius: 50px;
+            text-decoration: none;
+            font-weight: 600;
+            font-size: 0.95rem;
+            transition: all 0.3s;
+        }
+
+        .auth-btn.login {
+            background: transparent;
+            color: #3498db;
+            border: 2px solid #3498db;
+        }
+
+        .auth-btn.login:hover {
+            background: #3498db;
+            color: white;
+        }
+
+        .auth-btn.signup {
+            background: #3498db;
+            color: white;
+            border: 2px solid #3498db;
+        }
+
+        .auth-btn.signup:hover {
+            background: #2980b9;
+            border-color: #2980b9;
+        }
+
+        .mobile-menu-btn {
+            display: none;
+            background: none;
+            border: none;
+            font-size: 1.5rem;
+            cursor: pointer;
+            color: #2c3e50;
+        }
+
+        /* ===== AUTH MODALS ===== */
+        .modal-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0,0,0,0.5);
+            display: none;
+            justify-content: center;
+            align-items: center;
+            z-index: 2000;
+            animation: fadeIn 0.3s;
+        }
+
+        .modal-overlay.show {
+            display: flex;
+        }
+
+        .auth-modal {
+            background: white;
+            border-radius: 20px;
+            width: 90%;
+            max-width: 400px;
+            animation: slideUp 0.3s;
+        }
+
+        .modal-header {
+            padding: 1.5rem;
+            border-bottom: 1px solid #eee;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .modal-header h3 {
+            color: #2c3e50;
+            font-size: 1.5rem;
+        }
+
+        .close-modal {
+            background: none;
+            border: none;
+            font-size: 1.5rem;
+            color: #7f8c8d;
+            cursor: pointer;
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: background 0.3s;
+        }
+
+        .close-modal:hover {
+            background: #f8f9fa;
+        }
+
+        .modal-body {
+            padding: 1.5rem;
+        }
+
+        .tabs {
+            display: flex;
+            margin-bottom: 1.5rem;
+            border-bottom: 2px solid #eee;
+        }
+
+        .tab-btn {
+            flex: 1;
+            padding: 1rem;
+            background: none;
+            border: none;
+            font-weight: 600;
+            color: #7f8c8d;
+            cursor: pointer;
+            transition: all 0.3s;
+            position: relative;
+        }
+
+        .tab-btn.active {
+            color: #3498db;
+        }
+
+        .tab-btn.active::after {
+            content: '';
+            position: absolute;
+            bottom: -2px;
+            left: 0;
+            right: 0;
+            height: 3px;
+            background: #3498db;
+            border-radius: 3px;
+        }
+
+        .tab-content {
+            display: none;
+        }
+
+        .tab-content.active {
+            display: block;
+            animation: fadeIn 0.5s;
+        }
+
+        .form-group {
+            margin-bottom: 1.25rem;
+        }
+
+        .form-group label {
+            display: block;
+            margin-bottom: 0.5rem;
+            font-weight: 600;
+            color: #2c3e50;
+            font-size: 0.95rem;
+        }
+
+        .form-control {
+            width: 100%;
+            padding: 0.875rem;
+            border: 2px solid #e0e0e0;
+            border-radius: 10px;
+            font-size: 1rem;
+            transition: border-color 0.3s;
+        }
+
+        .form-control:focus {
+            outline: none;
+            border-color: #3498db;
+        }
+
+        .password-input {
+            position: relative;
+        }
+
+        .toggle-password {
+            position: absolute;
+            right: 10px;
+            top: 50%;
+            transform: translateY(-50%);
+            background: none;
+            border: none;
+            color: #7f8c8d;
+            cursor: pointer;
+        }
+
+        .modal-footer {
+            padding: 1.5rem;
+            border-top: 1px solid #eee;
+            text-align: center;
+        }
+
+        .modal-btn {
+            width: 100%;
+            padding: 1rem;
+            background: #3498db;
+            color: white;
+            border: none;
+            border-radius: 10px;
+            font-weight: 600;
+            font-size: 1rem;
+            cursor: pointer;
+            transition: background 0.3s;
+        }
+
+        .modal-btn:hover {
+            background: #2980b9;
+        }
+
+        .modal-btn:disabled {
+            background: #95a5a6;
+            cursor: not-allowed;
+        }
+
+        .error-message {
+            color: #e74c3c;
+            font-size: 0.875rem;
+            margin-top: 0.25rem;
+            display: none;
+        }
+
+        .error-message.show {
+            display: block;
+        }
+
+        .success-message {
+            color: #27ae60;
+            font-size: 0.875rem;
+            margin-top: 0.25rem;
+            display: none;
+        }
+
+        .success-message.show {
+            display: block;
+        }
+
+        /* ===== HERO SECTION ===== */
+        .hero {
+            background: linear-gradient(135deg, #3498db 0%, #2ecc71 100%);
+            color: white;
+            padding: 160px 0 100px;
+            text-align: center;
+            margin-top: 60px;
+        }
+
+        .hero h1 {
+            font-size: 3.5rem;
+            margin-bottom: 1.5rem;
+            font-weight: 800;
+            line-height: 1.2;
+        }
+
+        .hero p {
+            font-size: 1.25rem;
+            max-width: 700px;
+            margin: 0 auto 2.5rem;
+            opacity: 0.95;
+        }
+
+        .cta-button {
+            display: inline-block;
+            background: #f39c12;
+            color: white;
+            padding: 1rem 2.5rem;
+            border-radius: 50px;
+            text-decoration: none;
+            font-weight: 700;
+            font-size: 1.1rem;
+            transition: all 0.3s;
+            border: none;
+            cursor: pointer;
+        }
+
+        .cta-button:hover {
+            background: #e67e22;
+            transform: translateY(-3px);
+            box-shadow: 0 10px 20px rgba(0,0,0,0.2);
+        }
+
+        .cta-button:disabled {
+            background: #95a5a6;
+            cursor: not-allowed;
+            transform: none;
+            box-shadow: none;
+        }
+
+        /* ===== DASHBOARD SECTION ===== */
+        .dashboard-section {
+            padding: 5rem 0;
+            background: white;
+        }
+
+        .welcome-message {
+            background: linear-gradient(135deg, #3498db 0%, #2ecc71 100%);
+            color: white;
+            padding: 2rem;
+            border-radius: 15px;
+            margin-bottom: 2rem;
+        }
+
+        .welcome-message h2 {
+            font-size: 2rem;
+            margin-bottom: 0.5rem;
+        }
+
+        .dashboard-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 1.5rem;
+            margin-top: 2rem;
+        }
+
+        .dashboard-card {
+            background: #f8f9fa;
+            padding: 1.5rem;
+            border-radius: 15px;
+            border-left: 5px solid #3498db;
+        }
+
+        .dashboard-card h3 {
+            color: #2c3e50;
+            margin-bottom: 1rem;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .booking-history {
+            margin-top: 1rem;
+        }
+
+        .booking-item {
+            background: white;
+            padding: 1rem;
+            border-radius: 10px;
+            margin-bottom: 0.75rem;
+            border: 1px solid #eee;
+        }
+
+        .booking-header {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 0.5rem;
+        }
+
+        .booking-id {
+            font-weight: 600;
+            color: #3498db;
+        }
+
+        .booking-date {
+            color: #7f8c8d;
+            font-size: 0.9rem;
+        }
+
+        .booking-details {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 0.5rem;
+            font-size: 0.9rem;
+        }
+
+        /* ===== BOOKING SECTION ===== */
+        .booking-section {
+            padding: 5rem 0;
+            background: white;
+        }
+
+        .section-title {
+            text-align: center;
+            margin-bottom: 3rem;
+        }
+
+        .section-title h2 {
+            font-size: 2.8rem;
+            color: #2c3e50;
+            margin-bottom: 1rem;
+        }
+
+        .section-title p {
+            color: #7f8c8d;
+            font-size: 1.1rem;
+            max-width: 600px;
+            margin: 0 auto;
+        }
+
+        .booking-form {
+            background: #f8f9fa;
+            border-radius: 20px;
+            padding: 3rem;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.08);
+        }
+
+        .form-row {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 1.5rem;
+            margin-bottom: 2rem;
+        }
+
+        .form-options {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 1rem;
+            margin-top: 1rem;
+        }
+
+        .option-btn {
+            flex: 1;
+            min-width: 200px;
+            padding: 1.5rem;
+            background: white;
+            border: 2px solid #e0e0e0;
+            border-radius: 15px;
+            cursor: pointer;
+            transition: all 0.3s;
+            text-align: left;
+        }
+
+        .option-btn:hover {
+            border-color: #3498db;
+            transform: translateY(-2px);
+        }
+
+        .option-btn.active {
+            background: #3498db;
+            color: white;
+            border-color: #3498db;
+        }
+
+        .option-btn i {
+            font-size: 2rem;
+            margin-bottom: 0.5rem;
+            display: block;
+        }
+
+        .option-btn .taxi-name {
+            font-weight: 700;
+            font-size: 1.2rem;
+            margin-bottom: 0.25rem;
+        }
+
+        .option-btn .taxi-desc {
+            font-size: 0.9rem;
+            opacity: 0.9;
+        }
+
+        /* ===== PAYMENT SECTION ===== */
+        .payment-section {
+            padding: 5rem 0;
+            background: #f0f7ff;
+        }
+
+        .payment-container {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 3rem;
+        }
+
+        .payment-form {
+            flex: 1;
+            min-width: 300px;
+            background: white;
+            padding: 3rem;
+            border-radius: 20px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.08);
+        }
+
+        .payment-info {
+            flex: 1;
+            min-width: 300px;
+        }
+
+        .payment-info h3 {
+            font-size: 2rem;
+            color: #2c3e50;
+            margin-bottom: 1.5rem;
+        }
+
+        .payment-info ul {
+            list-style: none;
+            margin-bottom: 2rem;
+        }
+
+        .payment-info li {
+            margin-bottom: 1rem;
+            padding-left: 2rem;
+            position: relative;
+        }
+
+        .payment-info li i {
+            position: absolute;
+            left: 0;
+            top: 0.25rem;
+            color: #2ecc71;
+        }
+
+        .fare-display {
+            background: #f8f9fa;
+            padding: 1.5rem;
+            border-radius: 15px;
+            margin-bottom: 2rem;
+            border-left: 5px solid #3498db;
+        }
+
+        .fare-display h4 {
+            color: #2c3e50;
+            margin-bottom: 0.5rem;
+        }
+
+        .fare-amount {
+            font-size: 2.5rem;
+            font-weight: 800;
+            color: #3498db;
+            text-align: right;
+        }
+
+        /* Square Payment Form Styles */
+        .square-payment-container {
+            margin: 2rem 0;
+        }
+
+        #card-container {
+            width: 100%;
+            min-height: 50px;
+            margin: 1rem 0;
+            padding: 1rem;
+            border: 2px solid #e0e0e0;
+            border-radius: 10px;
+            background: white;
+        }
+
+        #card-container.square-focus {
+            border-color: #3498db;
+            box-shadow: 0 0 0 3px rgba(52, 152, 219, 0.1);
+        }
+
+        .payment-actions {
+            display: flex;
+            gap: 1rem;
+            margin-top: 1.5rem;
+        }
+
+        .payment-btn {
+            flex: 1;
+            padding: 1rem;
+            border: none;
+            border-radius: 10px;
+            font-weight: 600;
+            font-size: 1rem;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+
+        .payment-btn.primary {
+            background: #3498db;
+            color: white;
+        }
+
+        .payment-btn.primary:hover:not(:disabled) {
+            background: #2980b9;
+        }
+
+        .payment-btn.secondary {
+            background: #ecf0f1;
+            color: #2c3e50;
+        }
+
+        .payment-btn.secondary:hover {
+            background: #bdc3c7;
+        }
+
+        .payment-btn:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+        }
+
+        /* Payment Status Messages */
+        .payment-status {
+            margin-top: 1.5rem;
+            padding: 1rem;
+            border-radius: 10px;
+            display: none;
+        }
+
+        .payment-status.show {
+            display: block;
+            animation: fadeIn 0.5s;
+        }
+
+        .payment-status.success {
+            background: #d4edda;
+            color: #155724;
+            border: 1px solid #c3e6cb;
+        }
+
+        .payment-status.error {
+            background: #f8d7da;
+            color: #721c24;
+            border: 1px solid #f5c6cb;
+        }
+
+        .payment-status.processing {
+            background: #cce5ff;
+            color: #004085;
+            border: 1px solid #b8daff;
+        }
+
+        /* Accepted Cards */
+        .accepted-cards {
+            display: flex;
+            gap: 1rem;
+            margin: 2rem 0;
+            flex-wrap: wrap;
+        }
+
+        .card-logo {
+            width: 70px;
+            height: 45px;
+            background: white;
+            border-radius: 8px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 600;
+            color: #555;
+            box-shadow: 0 3px 10px rgba(0,0,0,0.1);
+            font-size: 0.9rem;
+        }
+
+        /* Receipt */
+        .receipt {
+            background: white;
+            padding: 2rem;
+            border-radius: 15px;
+            margin-top: 2rem;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+            display: none;
+        }
+
+        .receipt.show {
+            display: block;
+            animation: slideIn 0.5s;
+        }
+
+        .receipt h4 {
+            color: #3498db;
+            margin-bottom: 1rem;
+            padding-bottom: 0.5rem;
+            border-bottom: 2px solid #f0f0f0;
+        }
+
+        .receipt-line {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 0.5rem;
+            padding-bottom: 0.5rem;
+            border-bottom: 1px dashed #eee;
+        }
+
+        .receipt-line.total {
+            font-weight: bold;
+            font-size: 1.2rem;
+            border-bottom: 2px solid #3498db;
+            padding-top: 0.5rem;
+            margin-top: 0.5rem;
+        }
+
+        /* Loading Spinner */
+        .spinner {
+            display: inline-block;
+            width: 20px;
+            height: 20px;
+            border: 3px solid rgba(255,255,255,.3);
+            border-radius: 50%;
+            border-top-color: white;
+            animation: spin 1s ease-in-out infinite;
+        }
+
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; }
+            to { opacity: 1; }
+        }
+
+        @keyframes slideUp {
+            from { transform: translateY(50px); opacity: 0; }
+            to { transform: translateY(0); opacity: 1; }
+        }
+
+        @keyframes slideIn {
+            from { transform: translateY(-20px); opacity: 0; }
+            to { transform: translateY(0); opacity: 1; }
+        }
+
+        /* ===== RESPONSIVE DESIGN ===== */
+        @media (max-width: 768px) {
+            .hero {
+                padding: 120px 0 80px;
+            }
+
+            .hero h1 {
+                font-size: 2.5rem;
+            }
+
+            .nav-links {
+                display: none;
+                position: absolute;
+                top: 100%;
+                left: 0;
+                right: 0;
+                background: white;
+                flex-direction: column;
+                padding: 1rem;
+                box-shadow: 0 10px 20px rgba(0,0,0,0.1);
+            }
+
+            .nav-links.active {
+                display: flex;
+            }
+
+            .mobile-menu-btn {
+                display: block;
+            }
+
+            .booking-form,
+            .payment-form {
+                padding: 2rem;
+            }
+
+            .section-title h2 {
+                font-size: 2.2rem;
+            }
+
+            .payment-actions {
+                flex-direction: column;
+            }
+
+            .auth-buttons {
+                display: none;
+            }
+
+            .user-profile .user-name {
+                display: none;
+            }
+        }
+
+        @media (max-width: 480px) {
+            .hero h1 {
+                font-size: 2rem;
+            }
+
+            .form-options {
+                flex-direction: column;
+            }
+
+            .option-btn {
+                min-width: 100%;
+            }
+        }
+    </style>
+</head>
+<body>
+    <!-- Header -->
+    <header>
+        <div class="container">
+            <nav>
+                <div class="logo">
+                    <i class="fas fa-car"></i>
+                    <span>Cascade Taxi Ride</span>
+                </div>
+                <button class="mobile-menu-btn">
+                    <i class="fas fa-bars"></i>
+                </button>
+                <ul class="nav-links">
+                    <li><a href="#home">Home</a></li>
+                    <li><a href="#booking">Book Ride</a></li>
+                    <li><a href="#payment">Payment</a></li>
+                    <li><a href="#contact">Contact</a></li>
+                    
+                    <!-- User Profile (shown when logged in) -->
+                    <div id="userProfile" class="user-profile" style="display: none;">
+                        <div class="user-avatar" id="userAvatar">U</div>
+                        <div class="user-name" id="userName">User</div>
+                        <div class="user-dropdown" id="userDropdown">
+                            <a href="#" id="viewBookings">
+                                <i class="fas fa-history"></i> My Bookings
+                            </a>
+                            <a href="#" id="editProfile">
+                                <i class="fas fa-user-edit"></i> Edit Profile
+                            </a>
+                            <a href="#" id="logoutBtn">
+                                <i class="fas fa-sign-out-alt"></i> Logout
+                            </a>
+                        </div>
+                    </div>
+                    
+                    <!-- Auth Buttons (shown when not logged in) -->
+                    <div id="authButtons" class="auth-buttons">
+                        <a href="#" class="auth-btn login" id="loginBtn">Login</a>
+                        <a href="#" class="auth-btn signup" id="signupBtn">Sign Up</a>
+                    </div>
+                </ul>
+            </nav>
+        </div>
+    </header>
+
+    <!-- Auth Modal -->
+    <div class="modal-overlay" id="authModal">
+        <div class="auth-modal">
+            <div class="modal-header">
+                <h3 id="modalTitle">Welcome Back</h3>
+                <button class="close-modal" id="closeModal">&times;</button>
+            </div>
+            
+            <div class="modal-body">
+                <div class="tabs">
+                    <button class="tab-btn active" data-tab="login">Login</button>
+                    <button class="tab-btn" data-tab="signup">Sign Up</button>
+                </div>
+                
+                <!-- Login Form -->
+                <div class="tab-content active" id="loginTab">
+                    <form id="loginForm">
+                        <div class="form-group">
+                            <label for="loginEmail">Email Address</label>
+                            <input type="email" id="loginEmail" class="form-control" placeholder="your@email.com" required>
+                            <div class="error-message" id="loginEmailError"></div>
+                        </div>
+                        
+                        <div class="form-group">
+                            <label for="loginPassword">Password</label>
+                            <div class="password-input">
+                                <input type="password" id="loginPassword" class="form-control" placeholder="Enter your password" required>
+                                <button type="button" class="toggle-password" data-target="loginPassword">
+                                    <i class="far fa-eye"></i>
+                                </button>
+                            </div>
+                            <div class="error-message" id="loginPasswordError"></div>
+                        </div>
+                        
+                        <div class="form-group" style="text-align: right;">
+                            <a href="#" style="color: #3498db; font-size: 0.9rem;">Forgot Password?</a>
+                        </div>
+                        
+                        <div class="success-message" id="loginSuccess"></div>
+                    </form>
+                </div>
+                
+                <!-- Signup Form -->
+                <div class="tab-content" id="signupTab">
+                    <form id="signupForm">
+                        <div class="form-group">
+                            <label for="signupName">Full Name</label>
+                            <input type="text" id="signupName" class="form-control" placeholder="John Doe" required>
+                            <div class="error-message" id="signupNameError"></div>
+                        </div>
+                        
+                        <div class="form-group">
+                            <label for="signupEmail">Email Address</label>
+                            <input type="email" id="signupEmail" class="form-control" placeholder="your@email.com" required>
+                            <div class="error-message" id="signupEmailError"></div>
+                        </div>
+                        
+                        <div class="form-group">
+                            <label for="signupPhone">Phone Number</label>
+                            <input type="tel" id="signupPhone" class="form-control" placeholder="(123) 456-7890" required>
+                            <div class="error-message" id="signupPhoneError"></div>
+                        </div>
+                        
+                        <div class="form-group">
+                            <label for="signupPassword">Password</label>
+                            <div class="password-input">
+                                <input type="password" id="signupPassword" class="form-control" placeholder="Create a password" required>
+                                <button type="button" class="toggle-password" data-target="signupPassword">
+                                    <i class="far fa-eye"></i>
+                                </button>
+                            </div>
+                            <div class="error-message" id="signupPasswordError"></div>
+                        </div>
+                        
+                        <div class="form-group">
+                            <label for="signupConfirmPassword">Confirm Password</label>
+                            <div class="password-input">
+                                <input type="password" id="signupConfirmPassword" class="form-control" placeholder="Confirm password" required>
+                                <button type="button" class="toggle-password" data-target="signupConfirmPassword">
+                                    <i class="far fa-eye"></i>
+                                </button>
+                            </div>
+                            <div class="error-message" id="signupConfirmPasswordError"></div>
+                        </div>
+                        
+                        <div class="success-message" id="signupSuccess"></div>
+                    </form>
+                </div>
+            </div>
+            
+            <div class="modal-footer">
+                <button type="submit" form="loginForm" class="modal-btn" id="loginSubmit">Login</button>
+                <button type="submit" form="signupForm" class="modal-btn" id="signupSubmit" style="display: none;">Create Account</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Hero Section -->
+    <section class="hero" id="home">
+        <div class="container">
+            <h1>Your Reliable Ride, Anytime, Anywhere</h1>
+            <p>Safe, comfortable, and affordable taxi services with professional drivers. Book your ride in seconds and pay securely with any credit card.</p>
+            <a href="#booking" class="cta-button">Book Your Ride Now</a>
+        </div>
+    </section>
+
+    <!-- User Dashboard (shown when logged in) -->
+    <section class="dashboard-section" id="dashboard" style="display: none;">
+        <div class="container">
+            <div class="section-title">
+                <h2>My Dashboard</h2>
+                <p>Manage your rides and account information</p>
+            </div>
+            
+            <div class="welcome-message">
+                <h2>Welcome back, <span id="dashboardUserName">User</span>!</h2>
+                <p>Ready for your next ride? Book now or check your previous bookings.</p>
+            </div>
+            
+            <div class="dashboard-grid">
+                <div class="dashboard-card">
+                    <h3><i class="fas fa-car"></i> Quick Book</h3>
+                    <p>Book a new ride quickly using your saved preferences.</p>
+                    <a href="#booking" class="cta-button" style="margin-top: 1rem; padding: 0.75rem 1.5rem; font-size: 1rem;">Book Now</a>
+                </div>
+                
+                <div class="dashboard-card">
+                    <h3><i class="fas fa-history"></i> Recent Bookings</h3>
+                    <div class="booking-history" id="bookingHistory">
+                        <!-- Bookings will be loaded here -->
+                        <p>No bookings yet. Book your first ride!</p>
+                    </div>
+                </div>
+                
+                <div class="dashboard-card">
+                    <h3><i class="fas fa-user"></i> Profile Info</h3>
+                    <p><strong>Email:</strong> <span id="profileEmail">user@example.com</span></p>
+                    <p><strong>Phone:</strong> <span id="profilePhone">(123) 456-7890</span></p>
+                    <button class="auth-btn login" style="margin-top: 1rem;" id="editProfileBtn">
+                        Edit Profile
+                    </button>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Booking Form -->
+    <section class="booking-section" id="booking">
+        <div class="container">
+            <div class="section-title">
+                <h2>Book Your Taxi</h2>
+                <p>Enter your trip details and get an instant price estimate</p>
+            </div>
+            
+            <div class="booking-form">
+                <form id="bookingForm">
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="pickup">
+                                <i class="fas fa-map-marker-alt"></i> Pickup Location
+                            </label>
+                            <input type="text" id="pickup" class="form-control" placeholder="Enter pickup address" required>
+                        </div>
+                        <div class="form-group">
+                            <label for="dropoff">
+                                <i class="fas fa-flag-checkered"></i> Drop-off Location
+                            </label>
+                            <input type="text" id="dropoff" class="form-control" placeholder="Enter destination" required>
+                        </div>
+                    </div>
+                    
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="date">
+                                <i class="far fa-calendar-alt"></i> Pickup Date
+                            </label>
+                            <input type="date" id="date" class="form-control" required>
+                        </div>
+                        <div class="form-group">
+                            <label for="time">
+                                <i class="far fa-clock"></i> Pickup Time
+                            </label>
+                            <input type="time" id="time" class="form-control" required>
+                        </div>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label><i class="fas fa-car"></i> Select Taxi Type</label>
+                        <div class="form-options">
+                            <div class="option-btn active" data-type="standard" data-price="28">
+                                <i class="fas fa-car"></i>
+                                <div>
+                                    <div class="taxi-name">Standard Taxi</div>
+                                    <div class="taxi-desc">Up to 4 passengers - $28 base</div>
+                                </div>
+                            </div>
+                            <div class="option-btn" data-type="van" data-price="45">
+                                <i class="fas fa-shuttle-van"></i>
+                                <div>
+                                    <div class="taxi-name">Family Van</div>
+                                    <div class="taxi-desc">Up to 8 passengers - $45 base</div>
+                                </div>
+                            </div>
+                            <div class="option-btn" data-type="luxury" data-price="65">
+                                <i class="fas fa-car-side"></i>
+                                <div>
+                                    <div class="taxi-name">Luxury Sedan</div>
+                                    <div class="taxi-desc">Premium comfort - $65 base</div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Auto-filled when logged in -->
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="name">
+                                <i class="far fa-user"></i> Full Name
+                            </label>
+                            <input type="text" id="name" class="form-control" placeholder="Your full name" required>
+                        </div>
+                        <div class="form-group">
+                            <label for="phone">
+                                <i class="fas fa-phone"></i> Phone Number
+                            </label>
+                            <input type="tel" id="phone" class="form-control" placeholder="Your phone number" required>
+                        </div>
+                    </div>
+                    
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="email">
+                                <i class="far fa-envelope"></i> Email Address
+                            </label>
+                            <input type="email" id="email" class="form-control" placeholder="Your email for receipt" required>
+                        </div>
+                    </div>
+                    
+                    <button type="button" id="calculateFare" class="cta-button calculate-btn">
+                        <i class="fas fa-calculator"></i> Calculate Fare & Continue to Payment
+                    </button>
+                </form>
+            </div>
+        </div>
+    </section>
+
+    <!-- Payment Section -->
+    <section class="payment-section" id="payment">
+        <div class="container">
+            <div class="section-title">
+                <h2>Secure Payment</h2>
+                <p>Pay securely with any credit card via Square payment processing</p>
+            </div>
+            
+            <div class="payment-container">
+                <div class="payment-form">
+                    <h3>Payment Details</h3>
+                    
+                    <div class="fare-display">
+                        <div>
+                            <h4>Estimated Fare</h4>
+                            <small id="tripDetails">Complete booking form first</small>
+                        </div>
+                        <div class="fare-amount" id="fareAmount">$0.00</div>
+                    </div>
+                    
+                    <!-- Accepted Cards -->
+                    <div class="accepted-cards">
+                        <div class="card-logo">VISA</div>
+                        <div class="card-logo">MASTERCARD</div>
+                        <div class="card-logo">AMEX</div>
+                        <div class="card-logo">DISCOVER</div>
+                    </div>
+                    
+                    <!-- Square Payment Container -->
+                    <div class="square-payment-container">
+                        <div id="card-container"></div>
+                        
+                        <div class="payment-actions">
+                            <button id="card-button" class="payment-btn primary" disabled>
+                                <i class="fas fa-lock"></i> Pay Now
+                            </button>
+                            <button id="reset-button" class="payment-btn secondary">
+                                <i class="fas fa-redo"></i> Reset
+                            </button>
+                        </div>
+                    </div>
+                    
+                    <!-- Payment Status -->
+                    <div id="payment-status" class="payment-status"></div>
+                    
+                    <!-- Receipt -->
+                    <div id="receipt" class="receipt">
+                        <h4><i class="fas fa-receipt"></i> Booking Confirmation</h4>
+                        <div class="receipt-line">
+                            <span>Trip Fare:</span>
+                            <span id="receipt-fare">$0.00</span>
+                        </div>
+                        <div class="receipt-line">
+                            <span>Service Fee:</span>
+                            <span>$2.50</span>
+                        </div>
+                        <div class="receipt-line">
+                            <span>Tax (8%):</span>
+                            <span id="receipt-tax">$0.00</span>
+                        </div>
+                        <div class="receipt-line total">
+                            <span>Total Paid:</span>
+                            <span id="receipt-total">$0.00</span>
+                        </div>
+                        <div class="payment-details">
+                            <p><strong>Booking ID:</strong> <span id="booking-id">CTR-0000</span></p>
+                            <p><strong>Payment Date:</strong> <span id="payment-date">N/A</span></p>
+                            <p>Your booking is confirmed! We'll contact you at the pickup time.</p>
+                        </div>
+                    </div>
+                    
+                    <div style="margin-top: 2rem; font-size: 0.9rem; color: #7f8c8d; text-align: center;">
+                        <p><i class="fas fa-shield-alt"></i> Secured by Square | <i class="fas fa-lock"></i> PCI Compliant</p>
+                    </div>
+                </div>
+                
+                <div class="payment-info">
+                    <h3>Why Pay With Square?</h3>
+                    <ul>
+                        <li><i class="fas fa-shield-alt"></i> <strong>Bank-Level Security:</strong> All transactions are encrypted</li>
+                        <li><i class="fas fa-credit-card"></i> <strong>All Cards Accepted:</strong> Visa, Mastercard, Amex, Discover</li>
+                        <li><i class="fas fa-bolt"></i> <strong>Instant Processing:</strong> Payments processed in real-time</li>
+                        <li><i class="fas fa-receipt"></i> <strong>Digital Receipts:</strong> Sent automatically to your email</li>
+                        <li><i class="fas fa-headset"></i> <strong>24/7 Support:</strong> Square support available anytime</li>
+                        <li><i class="fas fa-money-bill-wave"></i> <strong>No Hidden Fees:</strong> The price you see is what you pay</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <script>
+        // ===== USER AUTHENTICATION SYSTEM =====
+        // In production, this would connect to a backend/database
+        // For GitHub Pages, we'll use localStorage to simulate a database
+        
+        class UserAuthSystem {
+            constructor() {
+                this.currentUser = null;
+                this.usersKey = 'cascade_taxi_users';
+                this.currentUserKey = 'cascade_current_user';
+                this.bookingsKey = 'cascade_user_bookings';
+                this.loadUsers();
+                this.loadCurrentUser();
+            }
+            
+            // Load users from localStorage
+            loadUsers() {
+                const usersJson = localStorage.getItem(this.usersKey);
+                this.users = usersJson ? JSON.parse(usersJson) : [];
+            }
+            
+            // Save users to localStorage
+            saveUsers() {
+                localStorage.setItem(this.usersKey, JSON.stringify(this.users));
+            }
+            
+            // Load current user from localStorage
+            loadCurrentUser() {
+                const userJson = localStorage.getItem(this.currentUserKey);
+                if (userJson) {
+                    this.currentUser = JSON.parse(userJson);
+                    this.updateUIForLoggedInUser();
+                }
+            }
+            
+            // Save current user to localStorage
+            saveCurrentUser() {
+                if (this.currentUser) {
+                    localStorage.setItem(this.currentUserKey, JSON.stringify(this.currentUser));
+                } else {
+                    localStorage.removeItem(this.currentUserKey);
+                }
+            }
+            
+            // Sign up new user
+            signup(name, email, phone, password) {
+                // Check if user already exists
+                if (this.users.find(user => user.email === email)) {
+                    return { success: false, message: 'Email already registered' };
+                }
+                
+                // Create new user
+                const newUser = {
+                    id: Date.now().toString(),
+                    name: name.trim(),
+                    email: email.toLowerCase().trim(),
+                    phone: phone.trim(),
+                    password: this.hashPassword(password),
+                    createdAt: new Date().toISOString(),
+                    bookings: []
+                };
+                
+                // Add to users array
+                this.users.push(newUser);
+                this.saveUsers();
+                
+                // Auto-login
+                this.login(email, password);
+                
+                return { success: true, user: newUser };
+            }
+            
+            // Login user
+            login(email, password) {
+                const user = this.users.find(u => u.email === email.toLowerCase().trim());
+                
+                if (!user) {
+                    return { success: false, message: 'User not found' };
+                }
+                
+                if (user.password !== this.hashPassword(password)) {
+                    return { success: false, message: 'Invalid password' };
+                }
+                
+                // Set current user (without password)
+                const { password: _, ...userWithoutPassword } = user;
+                this.currentUser = userWithoutPassword;
+                this.saveCurrentUser();
+                
+                return { success: true, user: this.currentUser };
+            }
+            
+            // Logout user
+            logout() {
+                this.currentUser = null;
+                this.saveCurrentUser();
+                return { success: true };
+            }
+            
+            // Update user profile
+            updateProfile(userId, updates) {
+                const userIndex = this.users.findIndex(u => u.id === userId);
+                if (userIndex === -1) return { success: false, message: 'User not found' };
+                
+                // Update user
+                this.users[userIndex] = { ...this.users[userIndex], ...updates };
+                this.saveUsers();
+                
+                // Update current user if it's the same user
+                if (this.currentUser && this.currentUser.id === userId) {
+                    this.currentUser = { ...this.currentUser, ...updates };
+                    this.saveCurrentUser();
+                }
+                
+                return { success: true, user: this.users[userIndex] };
+            }
+            
+            // Add booking for user
+            addBooking(userId, bookingData) {
+                const userIndex = this.users.findIndex(u => u.id === userId);
+                if (userIndex === -1) return { success: false, message: 'User not found' };
+                
+                const booking = {
+                    id: 'CTR-' + Date.now().toString().substr(-6),
+                    ...bookingData,
+                    createdAt: new Date().toISOString(),
+                    status: 'confirmed'
+                };
+                
+                this.users[userIndex].bookings.unshift(booking);
+                this.saveUsers();
+                
+                // Update current user's bookings
+                if (this.currentUser && this.currentUser.id === userId) {
+                    if (!this.currentUser.bookings) this.currentUser.bookings = [];
+                    this.currentUser.bookings.unshift(booking);
+                    this.saveCurrentUser();
+                }
+                
+                return { success: true, booking };
+            }
+            
+            // Get user bookings
+            getUserBookings(userId) {
+                const user = this.users.find(u => u.id === userId);
+                return user ? user.bookings || [] : [];
+            }
+            
+            // Simple password hashing (in production, use proper bcrypt)
+            hashPassword(password) {
+                // This is a simple hash for demo purposes
+                // In production, use: await bcrypt.hash(password, 10)
+                let hash = 0;
+                for (let i = 0; i < password.length; i++) {
+                    const char = password.charCodeAt(i);
+                    hash = ((hash << 5) - hash) + char;
+                    hash = hash & hash;
+                }
+                return hash.toString();
+            }
+            
+            // Update UI for logged in user
+            updateUIForLoggedInUser() {
+                if (this.currentUser) {
+                    // Show user profile, hide auth buttons
+                    document.getElementById('userProfile').style.display = 'flex';
+                    document.getElementById('authButtons').style.display = 'none';
+                    
+                    // Update user info
+                    document.getElementById('userName').textContent = this.currentUser.name;
+                    document.getElementById('userAvatar').textContent = this.currentUser.name.charAt(0).toUpperCase();
+                    
+                    // Update dashboard
+                    document.getElementById('dashboardUserName').textContent = this.currentUser.name;
+                    document.getElementById('profileEmail').textContent = this.currentUser.email;
+                    document.getElementById('profilePhone').textContent = this.currentUser.phone;
+                    
+                    // Show dashboard, hide hero for logged in users
+                    document.getElementById('dashboard').style.display = 'block';
+                    document.querySelector('.hero').style.display = 'none';
+                    
+                    // Auto-fill booking form
+                    document.getElementById('name').value = this.currentUser.name;
+                    document.getElementById('email').value = this.currentUser.email;
+                    document.getElementById('phone').value = this.currentUser.phone;
+                    
+                    // Load booking history
+                    this.loadBookingHistory();
+                    
+                } else {
+                    // Show auth buttons, hide user profile
+                    document.getElementById('userProfile').style.display = 'none';
+                    document.getElementById('authButtons').style.display = 'flex';
+                    
+                    // Show hero, hide dashboard
+                    document.getElementById('dashboard').style.display = 'none';
+                    document.querySelector('.hero').style.display = 'block';
+                    
+                    // Clear booking form
+                    document.getElementById('name').value = '';
+                    document.getElementById('email').value = '';
+                    document.getElementById('phone').value = '';
+                }
+            }
+            
+            // Load booking history
+            loadBookingHistory() {
+                if (!this.currentUser) return;
+                
+                const bookings = this.getUserBookings(this.currentUser.id);
+                const historyContainer = document.getElementById('bookingHistory');
+                
+                if (bookings.length === 0) {
+                    historyContainer.innerHTML = '<p>No bookings yet. Book your first ride!</p>';
+                    return;
+                }
+                
+                let html = '';
+                bookings.slice(0, 3).forEach(booking => {
+                    html += `
+                        <div class="booking-item">
+                            <div class="booking-header">
+                                <span class="booking-id">${booking.id}</span>
+                                <span class="booking-date">${new Date(booking.createdAt).toLocaleDateString()}</span>
+                            </div>
+                            <div class="booking-details">
+                                <div><strong>From:</strong> ${booking.pickup.substring(0, 20)}...</div>
+                                <div><strong>To:</strong> ${booking.dropoff.substring(0, 20)}...</div>
+                                <div><strong>Type:</strong> ${booking.taxiType}</div>
+                                <div><strong>Amount:</strong> $${booking.amount?.toFixed(2) || '0.00'}</div>
+                            </div>
+                        </div>
+                    `;
+                });
+                
+                if (bookings.length > 3) {
+                    html += `<p style="text-align: center; margin-top: 1rem;">
+                        <a href="#" style="color: #3498db;">View all ${bookings.length} bookings</a>
+                    </p>`;
+                }
+                
+                historyContainer.innerHTML = html;
+            }
+        }
+
+        // Initialize auth system
+        const authSystem = new UserAuthSystem();
+
+        // ===== AUTH MODAL MANAGEMENT =====
+        const authModal = document.getElementById('authModal');
+        const loginBtn = document.getElementById('loginBtn');
+        const signupBtn = document.getElementById('signupBtn');
+        const closeModal = document.getElementById('closeModal');
+        const modalTitle = document.getElementById('modalTitle');
+        const tabBtns = document.querySelectorAll('.tab-btn');
+        const tabContents = document.querySelectorAll('.tab-content');
+        const loginSubmit = document.getElementById('loginSubmit');
+        const signupSubmit = document.getElementById('signupSubmit');
+
+        // Open auth modal
+        function openAuthModal(tab = 'login') {
+            authModal.classList.add('show');
+            switchTab(tab);
+            document.body.style.overflow = 'hidden';
+        }
+
+        // Close auth modal
+        function closeAuthModal() {
+            authModal.classList.remove('show');
+            document.body.style.overflow = '';
+            clearForms();
+        }
+
+        // Switch between login/signup tabs
+        function switchTab(tab) {
+            // Update tab buttons
+            tabBtns.forEach(btn => {
+                if (btn.dataset.tab === tab) {
+                    btn.classList.add('active');
+                } else {
+                    btn.classList.remove('active');
+                }
+            });
+            
+            // Update tab contents
+            tabContents.forEach(content => {
+                if (content.id === tab + 'Tab') {
+                    content.classList.add('active');
+                } else {
+                    content.classList.remove('active');
+                }
+            });
+            
+            // Update modal title and submit button
+            if (tab === 'login') {
+                modalTitle.textContent = 'Welcome Back';
+                loginSubmit.style.display = 'block';
+                signupSubmit.style.display = 'none';
+            } else {
+                modalTitle.textContent = 'Create Account';
+                loginSubmit.style.display = 'none';
+                signupSubmit.style.display = 'block';
+            }
+        }
+
+        // Clear form errors and inputs
+        function clearForms() {
+            // Clear errors
+            document.querySelectorAll('.error-message').forEach(el => {
+                el.classList.remove('show');
+                el.textContent = '';
+            });
+            
+            document.querySelectorAll('.success-message').forEach(el => {
+                el.classList.remove('show');
+                el.textContent = '';
+            });
+            
+            // Clear inputs (optional - you might want to keep them)
+            // document.getElementById('loginForm').reset();
+            // document.getElementById('signupForm').reset();
+        }
+
+        // Show form error
+        function showError(elementId, message) {
+            const element = document.getElementById(elementId);
+            element.textContent = message;
+            element.classList.add('show');
+        }
+
+        // Show form success
+        function showSuccess(elementId, message) {
+            const element = document.getElementById(elementId);
+            element.textContent = message;
+            element.classList.add('show');
+        }
+
+        // Toggle password visibility
+        document.querySelectorAll('.toggle-password').forEach(btn => {
+            btn.addEventListener('click', function() {
+                const targetId = this.dataset.target;
+                const input = document.getElementById(targetId);
+                const icon = this.querySelector('i');
+                
+                if (input.type === 'password') {
+                    input.type = 'text';
+                    icon.classList.remove('fa-eye');
+                    icon.classList.add('fa-eye-slash');
+                } else {
+                    input.type = 'password';
+                    icon.classList.remove('fa-eye-slash');
+                    icon.classList.add('fa-eye');
+                }
+            });
+        });
+
+        // Event Listeners
+        loginBtn.addEventListener('click', (e) => {
+            e.preventDefault();
+            openAuthModal('login');
+        });
+
+        signupBtn.addEventListener('click', (e) => {
+            e.preventDefault();
+            openAuthModal('signup');
+        });
+
+        closeModal.addEventListener('click', closeAuthModal);
+        
+        // Close modal when clicking outside
+        authModal.addEventListener('click', (e) => {
+            if (e.target === authModal) {
+                closeAuthModal();
+            }
+        });
+
+        // Tab switching
+        tabBtns.forEach(btn => {
+            btn.addEventListener('click', () => {
+                switchTab(btn.dataset.tab);
+            });
+        });
+
+        // Login form submission
+        loginSubmit.addEventListener('click', (e) => {
+            e.preventDefault();
+            
+            const email = document.getElementById('loginEmail').value;
+            const password = document.getElementById('loginPassword').value;
+            
+            // Clear previous errors
+            clearForms();
+            
+            // Validate
+            if (!email) {
+                showError('loginEmailError', 'Email is required');
+                return;
+            }
+            
+            if (!password) {
+                showError('loginPasswordError', 'Password is required');
+                return;
+            }
+            
+            // Attempt login
+            const result = authSystem.login(email, password);
+            
+            if (result.success) {
+                showSuccess('loginSuccess', 'Login successful! Redirecting...');
+                setTimeout(() => {
+                    closeAuthModal();
+                    authSystem.updateUIForLoggedInUser();
+                }, 1000);
+            } else {
+                showError('loginEmailError', result.message);
+            }
+        });
+
+        // Signup form submission
+        signupSubmit.addEventListener('click', (e) => {
+            e.preventDefault();
+            
+            const name = document.getElementById('signupName').value;
+            const email = document.getElementById('signupEmail').value;
+            const phone = document.getElementById('signupPhone').value;
+            const password = document.getElementById('signupPassword').value;
+            const confirmPassword = document.getElementById('signupConfirmPassword').value;
+            
+            // Clear previous errors
+            clearForms();
+            
+            // Validate
+            if (!name) {
+                showError('signupNameError', 'Name is required');
+                return;
+            }
+            
+            if (!email) {
+                showError('signupEmailError', 'Email is required');
+                return;
+            }
+            
+            // Basic email validation
+            const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+            if (!emailRegex.test(email)) {
+                showError('signupEmailError', 'Please enter a valid email');
+                return;
+            }
+            
+            if (!phone) {
+                showError('signupPhoneError', 'Phone number is required');
+                return;
+            }
+            
+            if (!password) {
+                showError('signupPasswordError', 'Password is required');
+                return;
+            }
+            
+            if (password.length < 6) {
+                showError('signupPasswordError', 'Password must be at least 6 characters');
+                return;
+            }
+            
+            if (password !== confirmPassword) {
+                showError('signupConfirmPasswordError', 'Passwords do not match');
+                return;
+            }
+            
+            // Attempt signup
+            const result = authSystem.signup(name, email, phone, password);
+            
+            if (result.success) {
+                showSuccess('signupSuccess', 'Account created successfully!');
+                setTimeout(() => {
+                    closeAuthModal();
+                    authSystem.updateUIForLoggedInUser();
+                }, 1500);
+            } else {
+                showError('signupEmailError', result.message);
+            }
+        });
+
+        // Logout
+        document.getElementById('logoutBtn').addEventListener('click', (e) => {
+            e.preventDefault();
+            authSystem.logout();
+            authSystem.updateUIForLoggedInUser();
+            
+            // Hide user dropdown
+            document.getElementById('userDropdown').classList.remove('show');
+        });
+
+        // Toggle user dropdown
+        document.getElementById('userProfile').addEventListener('click', (e) => {
+            e.stopPropagation();
+            document.getElementById('userDropdown').classList.toggle('show');
+        });
+
+        // Close dropdown when clicking elsewhere
+        document.addEventListener('click', () => {
+            document.getElementById('userDropdown').classList.remove('show');
+        });
+
+        // View bookings
+        document.getElementById('viewBookings').addEventListener('click', (e) => {
+            e.preventDefault();
+            document.getElementById('dashboard').scrollIntoView({ behavior: 'smooth' });
+            document.getElementById('userDropdown').classList.remove('show');
+        });
+
+        // Edit profile
+        document.getElementById('editProfile').addEventListener('click', (e) => {
+            e.preventDefault();
+            openAuthModal('signup');
+            document.getElementById('userDropdown').classList.remove('show');
+        });
+
+        // ===== EXISTING TAXI BOOKING CODE =====
+        // (Your existing taxi booking and Square payment code goes here)
+        // I've included the basic structure, but you should copy your working
+        // booking and payment code from the previous version here
+        
+        // Initialize booking form
+        function initializeBookingForm() {
+            const today = new Date().toISOString().split('T')[0];
+            document.getElementById('date').min = today;
+            document.getElementById('date').value = today;
+
+            const now = new Date();
+            const nextHour = new Date(now.getTime() + 60 * 60 * 1000);
+            const timeString = nextHour.getHours().toString().padStart(2, '0') + ':' + 
+                              nextHour.getMinutes().toString().padStart(2, '0');
+            document.getElementById('time').value = timeString;
+        }
+
+        // Mobile menu
+        document.querySelector('.mobile-menu-btn').addEventListener('click', function() {
+            document.querySelector('.nav-links').classList.toggle('active');
+        });
+
+        // Close mobile menu when clicking links
+        document.querySelectorAll('.nav-links a').forEach(link => {
+            link.addEventListener('click', () => {
+                document.querySelector('.nav-links').classList.remove('active');
+            });
+        });
+
+        // Taxi type selection
+        document.querySelectorAll('.option-btn').forEach(button => {
+            button.addEventListener('click', function() {
+                document.querySelectorAll('.option-btn').forEach(btn => btn.classList.remove('active'));
+                this.classList.add('active');
+            });
+        });
+
+        // Smooth scrolling
+        document.querySelectorAll('a[href^="#"]').forEach(anchor => {
+            anchor.addEventListener('click', function(e) {
+                const href = this.getAttribute('href');
+                if (href === '#') return;
+                
+                e.preventDefault();
+                const target = document.querySelector(href);
+                if (target) {
+                    window.scrollTo({
+                        top: target.offsetTop - 80,
+                        behavior: 'smooth'
+                    });
+                }
+            });
+        });
+
+        // Initialize on page load
+        document.addEventListener('DOMContentLoaded', function() {
+            initializeBookingForm();
+            // Your existing Square initialization code here
+        });
+
+        // ===== DEMO DATA FOR TESTING =====
+        // Add some demo users for testing
+        function initializeDemoData() {
+            const users = JSON.parse(localStorage.getItem('cascade_taxi_users') || '[]');
+            
+            if (users.length === 0) {
+                // Create demo users
+                const demoUsers = [
+                    {
+                        id: '1',
+                        name: 'John Doe',
+                        email: 'john@example.com',
+                        phone: '(555) 123-4567',
+                        password: authSystem.hashPassword('password123'),
+                        createdAt: new Date().toISOString(),
+                        bookings: []
+                    },
+                    {
+                        id: '2',
+                        name: 'Jane Smith',
+                        email: 'jane@example.com',
+                        phone: '(555) 987-6543',
+                        password: authSystem.hashPassword('password123'),
+                        createdAt: new Date().toISOString(),
+                        bookings: []
+                    }
+                ];
+                
+                localStorage.setItem('cascade_taxi_users', JSON.stringify(demoUsers));
+                console.log('Demo users created. Login with:');
+                console.log('Email: john@example.com, Password: password123');
+                console.log('Email: jane@example.com, Password: password123');
+            }
+        }
+
+        // Initialize demo data on first load
+        initializeDemoData();
+    </script>
+</body>
+</html>
