@@ -1,4 +1,3 @@
-
 import streamlit as st
 import pandas as pd
 import numpy as np
@@ -6,7 +5,6 @@ import numpy as np
 st.set_page_config(page_title="Taxi Manager", layout="wide")
 st.title("🚕 Taxi Management System")
 
-# Your app code continues here...
 menu = st.sidebar.selectbox("Menu", ["Dashboard", "Data Entry", "Car Management"])
 
 if menu == "Dashboard":
@@ -15,9 +13,9 @@ if menu == "Dashboard":
     
 elif menu == "Data Entry":
     st.header("Data Entry")
-    # Add your data entry forms
+    st.write("Data entry form will go here")
     
 elif menu == "Car Management":
     st.header("Car Management")
-    # Add your car management forms
+    st.write("Car management form will go here")
 
