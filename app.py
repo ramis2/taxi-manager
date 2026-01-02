@@ -740,7 +740,11 @@ elif page == "Driver Management":
                             0.1
                         )
                     
-                    submitted = st.form_submit_button("💾 Update Driver", type="primary")
+                    # Correct way - form submit button
+submit_button = st.form_submit_button("💾 Save to Database")
+if submit_button:
+    # save logic
+
                     
                     if submitted:
                         idx = st.session_state.drivers_db[
