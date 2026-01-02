@@ -1,0 +1,2380 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Taxi Manager</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+
+        :root {
+            --primary: #2c3e50;
+            --secondary: #3498db;
+            --accent: #e74c3c;
+            --light: #ecf0f1;
+            --dark: #2c3e50;
+            --success: #27ae60;
+            --warning: #f39c12;
+            --gray: #95a5a6;
+            --sidebar-width: 250px;
+        }
+
+        body {
+            display: flex;
+            min-height: 100vh;
+            background-color: #f5f7fa;
+            color: var(--dark);
+        }
+
+        /* Sidebar Styles */
+        .sidebar {
+            width: var(--sidebar-width);
+            background-color: var(--primary);
+            color: white;
+            height: 100vh;
+            position: fixed;
+            overflow-y: auto;
+            box-shadow: 3px 0 10px rgba(0, 0, 0, 0.1);
+        }
+
+        .logo {
+            padding: 20px;
+            text-align: center;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .logo h2 {
+            color: white;
+            font-size: 1.5rem;
+        }
+
+        .logo span {
+            color: var(--secondary);
+        }
+
+        .nav-menu {
+            padding: 20px 0;
+        }
+
+        .nav-item {
+            list-style: none;
+        }
+
+        .nav-link {
+            display: flex;
+            align-items: center;
+            padding: 15px 25px;
+            color: rgba(255, 255, 255, 0.8);
+            text-decoration: none;
+            transition: all 0.3s ease;
+            border-left: 4px solid transparent;
+        }
+
+        .nav-link:hover, .nav-link.active {
+            background-color: rgba(255, 255, 255, 0.1);
+            color: white;
+            border-left: 4px solid var(--secondary);
+        }
+
+        .nav-link i {
+            margin-right: 12px;
+            width: 20px;
+            text-align: center;
+        }
+
+        .nav-link .badge {
+            margin-left: auto;
+            background-color: var(--accent);
+            color: white;
+            padding: 2px 8px;
+            border-radius: 10px;
+            font-size: 0.8rem;
+        }
+
+        /* Main Content Styles */
+        .main-content {
+            flex: 1;
+            margin-left: var(--sidebar-width);
+            padding: 20px;
+        }
+
+        .header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding-bottom: 20px;
+            border-bottom: 1px solid #e0e0e0;
+            margin-bottom: 30px;
+        }
+
+        .header h1 {
+            color: var(--primary);
+            font-size: 1.8rem;
+        }
+
+        .user-info {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+        }
+
+        .user-info img {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            border: 2px solid var(--secondary);
+        }
+
+        /* Dashboard Cards */
+        .dashboard-cards {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+            gap: 20px;
+            margin-bottom: 30px;
+        }
+
+        .card {
+            background-color: white;
+            border-radius: 10px;
+            padding: 20px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.05);
+            transition: transform 0.3s ease;
+        }
+
+        .card:hover {
+            transform: translateY(-5px);
+        }
+
+        .card-icon {
+            width: 50px;
+            height: 50px;
+            border-radius: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin-bottom: 15px;
+            font-size: 1.5rem;
+            color: white;
+        }
+
+        .card-icon.drivers { background-color: var(--secondary); }
+        .card-icon.cars { background-color: var(--success); }
+        .card-icon.balance { background-color: var(--warning); }
+        .card-icon.reports { background-color: var(--accent); }
+        .card-icon.letters { background-color: #9b59b6; }
+
+        .card h3 {
+            font-size: 1.5rem;
+            margin-bottom: 5px;
+        }
+
+        .card p {
+            color: var(--gray);
+            font-size: 0.9rem;
+        }
+
+        /* Section Styles */
+        .section {
+            display: none;
+        }
+
+        .section.active {
+            display: block;
+        }
+
+        /* Section Header */
+        .section-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+        }
+
+        .section-header h2 {
+            color: var(--primary);
+        }
+
+        .section-header .btn-group {
+            display: flex;
+            gap: 10px;
+        }
+
+        /* Button Styles */
+        .btn {
+            padding: 10px 20px;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            font-weight: 600;
+            transition: all 0.3s ease;
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .btn-primary {
+            background-color: var(--secondary);
+            color: white;
+        }
+
+        .btn-primary:hover {
+            background-color: #2980b9;
+        }
+
+        .btn-success {
+            background-color: var(--success);
+            color: white;
+        }
+
+        .btn-warning {
+            background-color: var(--warning);
+            color: white;
+        }
+
+        .btn-danger {
+            background-color: var(--accent);
+            color: white;
+        }
+
+        .btn-info {
+            background-color: #3498db;
+            color: white;
+        }
+
+        /* Form Container */
+        .form-container {
+            background-color: white;
+            border-radius: 10px;
+            padding: 25px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.05);
+            margin-bottom: 30px;
+            display: none;
+        }
+
+        .form-container.active {
+            display: block;
+            animation: fadeIn 0.5s ease;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(-10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        /* Form Styles */
+        .form-row {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+            gap: 20px;
+            margin-bottom: 20px;
+        }
+
+        .form-group {
+            margin-bottom: 15px;
+        }
+
+        .form-group label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: 600;
+            color: var(--dark);
+        }
+
+        .form-group input,
+        .form-group select,
+        .form-group textarea {
+            width: 100%;
+            padding: 12px 15px;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+            font-size: 1rem;
+            transition: border 0.3s ease;
+        }
+
+        .form-group input:focus,
+        .form-group select:focus,
+        .form-group textarea:focus {
+            border-color: var(--secondary);
+            outline: none;
+        }
+
+        .form-group.required label::after {
+            content: " *";
+            color: var(--accent);
+        }
+
+        .form-buttons {
+            display: flex;
+            justify-content: flex-end;
+            gap: 10px;
+            margin-top: 20px;
+        }
+
+        /* Table Styles */
+        .table-container {
+            background-color: white;
+            border-radius: 10px;
+            overflow: hidden;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.05);
+            margin-top: 20px;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+
+        thead {
+            background-color: var(--primary);
+            color: white;
+        }
+
+        th, td {
+            padding: 15px;
+            text-align: left;
+            border-bottom: 1px solid #eee;
+        }
+
+        tbody tr:hover {
+            background-color: #f9f9f9;
+        }
+
+        /* Status Badges */
+        .status {
+            display: inline-block;
+            padding: 5px 10px;
+            border-radius: 20px;
+            font-size: 0.8rem;
+            font-weight: 600;
+        }
+
+        .status.active {
+            background-color: #d4edda;
+            color: #155724;
+        }
+
+        .status.inactive {
+            background-color: #f8d7da;
+            color: #721c24;
+        }
+
+        .status.maintenance {
+            background-color: #fff3cd;
+            color: #856404;
+        }
+
+        .status.available {
+            background-color: #d1ecf1;
+            color: #0c5460;
+        }
+
+        /* Action Buttons */
+        .actions {
+            display: flex;
+            gap: 10px;
+        }
+
+        .action-btn {
+            width: 35px;
+            height: 35px;
+            border-radius: 5px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            color: white;
+            transition: all 0.3s ease;
+        }
+
+        .action-btn.edit {
+            background-color: var(--warning);
+        }
+
+        .action-btn.delete {
+            background-color: var(--accent);
+        }
+
+        .action-btn.view {
+            background-color: var(--secondary);
+        }
+
+        .action-btn.letter {
+            background-color: #9b59b6;
+        }
+
+        .action-btn:hover {
+            opacity: 0.8;
+            transform: scale(1.1);
+        }
+
+        /* Alert Styles */
+        .alert {
+            padding: 15px;
+            border-radius: 5px;
+            margin-bottom: 20px;
+            display: none;
+        }
+
+        .alert.success {
+            background-color: #d4edda;
+            color: #155724;
+            border: 1px solid #c3e6cb;
+            display: block;
+        }
+
+        .alert.error {
+            background-color: #f8d7da;
+            color: #721c24;
+            border: 1px solid #f5c6cb;
+            display: block;
+        }
+
+        .alert.info {
+            background-color: #d1ecf1;
+            color: #0c5460;
+            border: 1px solid #bee5eb;
+            display: block;
+        }
+
+        /* Driver Letter Editor */
+        .letter-editor {
+            background-color: white;
+            border-radius: 10px;
+            padding: 25px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.05);
+            margin-bottom: 30px;
+        }
+
+        .letter-preview {
+            background-color: #f9f9f9;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+            padding: 25px;
+            min-height: 400px;
+            font-family: 'Times New Roman', serif;
+            line-height: 1.6;
+            margin-top: 20px;
+        }
+
+        .letter-header {
+            text-align: center;
+            margin-bottom: 30px;
+        }
+
+        .letter-date {
+            text-align: right;
+            margin-bottom: 20px;
+        }
+
+        .letter-signature {
+            margin-top: 50px;
+        }
+
+        .letter-footer {
+            margin-top: 40px;
+            font-size: 0.9em;
+            color: #666;
+        }
+
+        /* Tabs */
+        .tabs {
+            display: flex;
+            border-bottom: 1px solid #ddd;
+            margin-bottom: 20px;
+        }
+
+        .tab {
+            padding: 10px 20px;
+            cursor: pointer;
+            border: 1px solid transparent;
+            border-bottom: none;
+            background: none;
+            font-weight: 600;
+            color: var(--gray);
+        }
+
+        .tab.active {
+            color: var(--secondary);
+            border-color: #ddd;
+            border-bottom-color: white;
+            background-color: white;
+            border-radius: 5px 5px 0 0;
+        }
+
+        .tab-content {
+            display: none;
+        }
+
+        .tab-content.active {
+            display: block;
+        }
+
+        /* Modal */
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.5);
+            z-index: 1000;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .modal.active {
+            display: flex;
+        }
+
+        .modal-content {
+            background: white;
+            border-radius: 10px;
+            padding: 30px;
+            max-width: 600px;
+            width: 90%;
+            max-height: 80vh;
+            overflow-y: auto;
+        }
+
+        .modal-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+        }
+
+        .modal-header h3 {
+            color: var(--primary);
+        }
+
+        .modal-close {
+            background: none;
+            border: none;
+            font-size: 1.5rem;
+            cursor: pointer;
+            color: var(--gray);
+        }
+
+        /* Search and Filter */
+        .search-filter {
+            background-color: white;
+            border-radius: 10px;
+            padding: 15px;
+            margin-bottom: 20px;
+            display: flex;
+            gap: 15px;
+            align-items: center;
+        }
+
+        .search-box {
+            flex: 1;
+            position: relative;
+        }
+
+        .search-box input {
+            width: 100%;
+            padding: 10px 15px 10px 40px;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+        }
+
+        .search-box i {
+            position: absolute;
+            left: 15px;
+            top: 50%;
+            transform: translateY(-50%);
+            color: var(--gray);
+        }
+
+        /* Responsive Design */
+        @media (max-width: 992px) {
+            .sidebar {
+                width: 70px;
+            }
+
+            .sidebar .logo h2 span,
+            .sidebar .nav-link span:not(.badge) {
+                display: none;
+            }
+
+            .sidebar .nav-link {
+                justify-content: center;
+                padding: 15px;
+            }
+
+            .sidebar .nav-link i {
+                margin-right: 0;
+            }
+
+            .main-content {
+                margin-left: 70px;
+            }
+        }
+
+        @media (max-width: 768px) {
+            .dashboard-cards {
+                grid-template-columns: 1fr;
+            }
+
+            .form-row {
+                grid-template-columns: 1fr;
+            }
+
+            .section-header {
+                flex-direction: column;
+                align-items: flex-start;
+                gap: 15px;
+            }
+
+            .section-header .btn-group {
+                width: 100%;
+                flex-direction: column;
+            }
+
+            table {
+                display: block;
+                overflow-x: auto;
+            }
+
+            .actions {
+                flex-wrap: wrap;
+            }
+        }
+
+        /* CPNC Input Styles */
+        .cpnc-input {
+            position: relative;
+        }
+
+        .cpnc-input .prefix {
+            position: absolute;
+            left: 10px;
+            top: 50%;
+            transform: translateY(-50%);
+            color: var(--gray);
+            font-weight: bold;
+        }
+
+        .cpnc-input input {
+            padding-left: 40px;
+        }
+
+        /* Print Styles */
+        @media print {
+            .sidebar, .header, .btn, .actions, .search-filter {
+                display: none !important;
+            }
+            
+            .main-content {
+                margin-left: 0;
+                padding: 0;
+            }
+            
+            .letter-preview {
+                border: none;
+                padding: 0;
+                min-height: auto;
+            }
+        }
+    </style>
+</head>
+<body>
+    <!-- Sidebar Navigation -->
+    <div class="sidebar">
+        <div class="logo">
+            <h2>Taxi<span>Manager</span></h2>
+        </div>
+        <ul class="nav-menu">
+            <li class="nav-item">
+                <a href="#" class="nav-link" onclick="showSection('dashboard')">
+                    <i class="fas fa-tachometer-alt"></i>
+                    <span>Dashboard</span>
+                </a>
+            </li>
+            <li class="nav-item">
+                <a href="#" class="nav-link" onclick="showSection('dataEntry')">
+                    <i class="fas fa-edit"></i>
+                    <span>Data Entry</span>
+                </a>
+            </li>
+            <li class="nav-item">
+                <a href="#" class="nav-link" onclick="showSection('balance')">
+                    <i class="fas fa-balance-scale"></i>
+                    <span>Balance</span>
+                </a>
+            </li>
+            <li class="nav-item">
+                <a href="#" class="nav-link" onclick="showSection('driverManagement')">
+                    <i class="fas fa-users"></i>
+                    <span>Driver Management</span>
+                    <span class="badge" id="driverCount">0</span>
+                </a>
+            </li>
+            <li class="nav-item">
+                <a href="#" class="nav-link" onclick="showSection('carManagement')">
+                    <i class="fas fa-car"></i>
+                    <span>Car Management</span>
+                    <span class="badge" id="carCount">0</span>
+                </a>
+            </li>
+            <li class="nav-item">
+                <a href="#" class="nav-link" onclick="showSection('driverLetter')">
+                    <i class="fas fa-envelope"></i>
+                    <span>Driver Letter</span>
+                </a>
+            </li>
+            <li class="nav-item">
+                <a href="#" class="nav-link" onclick="showSection('deleteDriver')">
+                    <i class="fas fa-trash"></i>
+                    <span>Delete Driver</span>
+                </a>
+            </li>
+            <li class="nav-item">
+                <a href="#" class="nav-link" onclick="showSection('reports')">
+                    <i class="fas fa-chart-bar"></i>
+                    <span>Reports</span>
+                </a>
+            </li>
+            <li class="nav-item">
+                <a href="#" class="nav-link" onclick="showSection('settings')">
+                    <i class="fas fa-cog"></i>
+                    <span>Settings</span>
+                </a>
+            </li>
+        </ul>
+    </div>
+
+    <!-- Main Content -->
+    <div class="main-content">
+        <!-- Header -->
+        <div class="header">
+            <h1 id="pageTitle">Dashboard</h1>
+            <div class="user-info">
+                <div>
+                    <h4>Admin User</h4>
+                    <p>Administrator</p>
+                </div>
+                <img src="https://ui-avatars.com/api/?name=Admin+User&background=3498db&color=fff" alt="Admin">
+            </div>
+        </div>
+
+        <!-- Alert Container -->
+        <div id="alertContainer"></div>
+
+        <!-- Dashboard Section -->
+        <section id="dashboard" class="section active">
+            <div class="dashboard-cards">
+                <div class="card">
+                    <div class="card-icon drivers">
+                        <i class="fas fa-users"></i>
+                    </div>
+                    <h3 id="totalDrivers">0</h3>
+                    <p>Total Drivers</p>
+                </div>
+                <div class="card">
+                    <div class="card-icon cars">
+                        <i class="fas fa-car"></i>
+                    </div>
+                    <h3 id="totalCars">0</h3>
+                    <p>Total Cars</p>
+                </div>
+                <div class="card">
+                    <div class="card-icon balance">
+                        <i class="fas fa-dollar-sign"></i>
+                    </div>
+                    <h3 id="totalBalance">$0.00</h3>
+                    <p>Total Balance</p>
+                </div>
+                <div class="card">
+                    <div class="card-icon letters">
+                        <i class="fas fa-envelope"></i>
+                    </div>
+                    <h3 id="totalLetters">0</h3>
+                    <p>Letters Generated</p>
+                </div>
+            </div>
+            
+            <div class="dashboard-cards">
+                <div class="table-container">
+                    <h3 style="padding: 20px 20px 0;">Recent Drivers</h3>
+                    <div id="recentDriversTable">
+                        <p style="padding: 20px; text-align: center; color: var(--gray);">
+                            Loading drivers...
+                        </p>
+                    </div>
+                </div>
+                
+                <div class="table-container">
+                    <h3 style="padding: 20px 20px 0;">Recent Cars</h3>
+                    <div id="recentCarsTable">
+                        <p style="padding: 20px; text-align: center; color: var(--gray);">
+                            Loading cars...
+                        </p>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Driver Management Section -->
+        <section id="driverManagement" class="section">
+            <div class="section-header">
+                <h2>Driver Management</h2>
+                <div class="btn-group">
+                    <button class="btn btn-primary" onclick="toggleDriverForm()">
+                        <i class="fas fa-plus"></i> Add New Driver
+                    </button>
+                    <button class="btn btn-info" onclick="exportDriversToCSV()">
+                        <i class="fas fa-download"></i> Export CSV
+                    </button>
+                </div>
+            </div>
+
+            <!-- Add Driver Form -->
+            <div id="driverForm" class="form-container">
+                <h3 style="margin-bottom: 20px;">Add New Driver</h3>
+                <form id="newDriverForm" onsubmit="addDriver(event)">
+                    <div class="form-row">
+                        <div class="form-group required">
+                            <label for="driverName">Full Name</label>
+                            <input type="text" id="driverName" required placeholder="Enter driver's full name">
+                        </div>
+                        <div class="form-group required">
+                            <label for="driverLicense">License Number</label>
+                            <input type="text" id="driverLicense" required placeholder="Enter license number">
+                        </div>
+                    </div>
+                    
+                    <div class="form-row">
+                        <div class="form-group required">
+                            <label for="driverPhone">Phone Number</label>
+                            <input type="tel" id="driverPhone" required placeholder="Enter phone number">
+                        </div>
+                        <div class="form-group">
+                            <label for="driverEmail">Email Address</label>
+                            <input type="email" id="driverEmail" placeholder="Enter email address">
+                        </div>
+                    </div>
+                    
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="driverAddress">Address</label>
+                            <textarea id="driverAddress" rows="2" placeholder="Enter address"></textarea>
+                        </div>
+                        <div class="form-group">
+                            <label for="driverStatus">Status</label>
+                            <select id="driverStatus">
+                                <option value="active">Active</option>
+                                <option value="inactive">Inactive</option>
+                                <option value="on-leave">On Leave</option>
+                            </select>
+                        </div>
+                    </div>
+                    
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="hireDate">Hire Date</label>
+                            <input type="date" id="hireDate">
+                        </div>
+                        <div class="form-group">
+                            <label for="driverCar">Assigned Car</label>
+                            <select id="driverCar">
+                                <option value="">Select a car</option>
+                            </select>
+                        </div>
+                    </div>
+                    
+                    <div class="form-buttons">
+                        <button type="button" class="btn" onclick="toggleDriverForm()">Cancel</button>
+                        <button type="submit" class="btn btn-success">
+                            <i class="fas fa-save"></i> Save Driver
+                        </button>
+                    </div>
+                </form>
+            </div>
+
+            <!-- Search and Filter -->
+            <div class="search-filter">
+                <div class="search-box">
+                    <i class="fas fa-search"></i>
+                    <input type="text" id="driverSearch" placeholder="Search drivers by name, license, or phone..." onkeyup="filterDrivers()">
+                </div>
+                <select id="driverStatusFilter" onchange="filterDrivers()">
+                    <option value="">All Status</option>
+                    <option value="active">Active</option>
+                    <option value="inactive">Inactive</option>
+                    <option value="on-leave">On Leave</option>
+                </select>
+            </div>
+
+            <!-- Drivers Table -->
+            <div class="table-container">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>ID</th>
+                            <th>Name</th>
+                            <th>License</th>
+                            <th>Phone</th>
+                            <th>Status</th>
+                            <th>Car Assigned</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody id="driversTableBody">
+                        <!-- Will be populated by JavaScript -->
+                    </tbody>
+                </table>
+            </div>
+        </section>
+
+        <!-- Car Management Section -->
+        <section id="carManagement" class="section">
+            <div class="section-header">
+                <h2>Car Management</h2>
+                <div class="btn-group">
+                    <button class="btn btn-primary" onclick="toggleCarForm()">
+                        <i class="fas fa-plus"></i> Add New Car
+                    </button>
+                    <button class="btn btn-info" onclick="exportCarsToCSV()">
+                        <i class="fas fa-download"></i> Export CSV
+                    </button>
+                </div>
+            </div>
+
+            <!-- Add Car Form -->
+            <div id="carForm" class="form-container">
+                <h3 style="margin-bottom: 20px;">Add New Car</h3>
+                <form id="newCarForm" onsubmit="addCar(event)">
+                    <div class="form-row">
+                        <div class="form-group required">
+                            <label for="carModel">Car Model</label>
+                            <input type="text" id="carModel" required placeholder="e.g., Toyota Camry">
+                        </div>
+                        <div class="form-group required">
+                            <label for="carYear">Year</label>
+                            <input type="number" id="carYear" required min="2000" max="2025" placeholder="e.g., 2022">
+                        </div>
+                    </div>
+                    
+                    <div class="form-row">
+                        <div class="form-group required">
+                            <label for="carCPNC">CPNC Number</label>
+                            <div class="cpnc-input">
+                                <span class="prefix">CPNC#</span>
+                                <input type="text" id="carCPNC" required placeholder="0001, 0002, etc." pattern="[0-9]{4}" title="Enter 4-digit CPNC number">
+                            </div>
+                        </div>
+                        <div class="form-group required">
+                            <label for="carPlate">License Plate</label>
+                            <input type="text" id="carPlate" required placeholder="e.g., ABC-123">
+                        </div>
+                    </div>
+                    
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="carColor">Color</label>
+                            <input type="text" id="carColor" placeholder="e.g., Red, Blue">
+                        </div>
+                        <div class="form-group">
+                            <label for="carMileage">Mileage (km)</label>
+                            <input type="number" id="carMileage" placeholder="e.g., 15000">
+                        </div>
+                    </div>
+                    
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="carStatus">Status</label>
+                            <select id="carStatus">
+                                <option value="available">Available</option>
+                                <option value="assigned">Assigned</option>
+                                <option value="maintenance">Maintenance</option>
+                                <option value="inactive">Inactive</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label for="carInsurance">Insurance Expiry</label>
+                            <input type="date" id="carInsurance">
+                        </div>
+                    </div>
+                    
+                    <div class="form-buttons">
+                        <button type="button" class="btn" onclick="toggleCarForm()">Cancel</button>
+                        <button type="submit" class="btn btn-success">
+                            <i class="fas fa-save"></i> Save Car
+                        </button>
+                    </div>
+                </form>
+            </div>
+
+            <!-- Search and Filter -->
+            <div class="search-filter">
+                <div class="search-box">
+                    <i class="fas fa-search"></i>
+                    <input type="text" id="carSearch" placeholder="Search cars by model, plate, or CPNC..." onkeyup="filterCars()">
+                </div>
+                <select id="carStatusFilter" onchange="filterCars()">
+                    <option value="">All Status</option>
+                    <option value="available">Available</option>
+                    <option value="assigned">Assigned</option>
+                    <option value="maintenance">Maintenance</option>
+                    <option value="inactive">Inactive</option>
+                </select>
+            </div>
+
+            <!-- Cars Table -->
+            <div class="table-container">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>ID</th>
+                            <th>CPNC#</th>
+                            <th>Model</th>
+                            <th>Year</th>
+                            <th>Plate</th>
+                            <th>Color</th>
+                            <th>Status</th>
+                            <th>Assigned To</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody id="carsTableBody">
+                        <!-- Will be populated by JavaScript -->
+                    </tbody>
+                </table>
+            </div>
+        </section>
+
+        <!-- Driver Letter Section -->
+        <section id="driverLetter" class="section">
+            <div class="section-header">
+                <h2>Driver Letter Generator</h2>
+                <div class="btn-group">
+                    <button class="btn btn-primary" onclick="generateLetter()">
+                        <i class="fas fa-file-word"></i> Generate Letter
+                    </button>
+                    <button class="btn btn-success" onclick="printLetter()">
+                        <i class="fas fa-print"></i> Print Letter
+                    </button>
+                    <button class="btn btn-info" onclick="downloadODT()">
+                        <i class="fas fa-download"></i> Download ODT
+                    </button>
+                </div>
+            </div>
+
+            <div class="letter-editor">
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="letterDriver">Select Driver</label>
+                        <select id="letterDriver" onchange="updateLetterPreview()">
+                            <option value="">Select a driver...</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label for="letterType">Letter Type</label>
+                        <select id="letterType" onchange="updateLetterPreview()">
+                            <option value="appointment">Appointment Letter</option>
+                            <option value="warning">Warning Letter</option>
+                            <option value="termination">Termination Letter</option>
+                            <option value="recommendation">Recommendation Letter</option>
+                            <option value="custom">Custom Letter</option>
+                        </select>
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label for="letterSubject">Subject</label>
+                    <input type="text" id="letterSubject" value="Appointment as Taxi Driver" onkeyup="updateLetterPreview()">
+                </div>
+
+                <div class="form-group">
+                    <label for="letterContent">Letter Content</label>
+                    <textarea id="letterContent" rows="10" onkeyup="updateLetterPreview()">
+This letter is to confirm your appointment as a taxi driver with our company. Please review the following terms and conditions:
+
+1. You are required to follow all traffic rules and regulations.
+2. Maintain your assigned vehicle in good condition.
+3. Submit daily reports and earnings.
+4. Be professional and courteous with all customers.
+
+We look forward to working with you.
+                    </textarea>
+                </div>
+
+                <div class="letter-preview" id="letterPreview">
+                    <!-- Letter preview will be generated here -->
+                </div>
+            </div>
+        </section>
+
+        <!-- Delete Driver Section -->
+        <section id="deleteDriver" class="section">
+            <div class="section-header">
+                <h2>Delete Driver</h2>
+                <div class="alert info">
+                    <i class="fas fa-exclamation-circle"></i> Warning: Deleting a driver will remove all their records permanently.
+                </div>
+            </div>
+
+            <div class="table-container">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Select</th>
+                            <th>ID</th>
+                            <th>Name</th>
+                            <th>License</th>
+                            <th>Phone</th>
+                            <th>Status</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody id="deleteDriversTableBody">
+                        <!-- Will be populated by JavaScript -->
+                    </tbody>
+                </table>
+                
+                <div style="padding: 20px; text-align: right;">
+                    <button class="btn btn-danger" onclick="deleteSelectedDrivers()" style="width: 200px;">
+                        <i class="fas fa-trash"></i> Delete Selected Drivers
+                    </button>
+                </div>
+            </div>
+        </section>
+
+        <!-- Other Sections (Placeholders) -->
+        <section id="dataEntry" class="section">
+            <h2>Data Entry</h2>
+            <p>Data entry section content goes here.</p>
+        </section>
+        
+        <section id="balance" class="section">
+            <h2>Balance</h2>
+            <p>Balance summary and details go here.</p>
+        </section>
+        
+        <section id="reports" class="section">
+            <h2>Reports</h2>
+            <p>Reports and analytics go here.</p>
+        </section>
+        
+        <section id="settings" class="section">
+            <h2>Settings</h2>
+            <p>Application settings go here.</p>
+        </section>
+    </div>
+
+    <!-- Modal for Viewing Details -->
+    <div class="modal" id="viewModal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3 id="modalTitle">Driver Details</h3>
+                <button class="modal-close" onclick="closeModal()">×</button>
+            </div>
+            <div id="modalContent">
+                <!-- Content will be populated by JavaScript -->
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Sample initial data
+        let drivers = JSON.parse(localStorage.getItem('taxiDrivers')) || [
+            {
+                id: 1,
+                name: "John Smith",
+                license: "DL123456",
+                phone: "+1 (555) 123-4567",
+                email: "john.smith@example.com",
+                address: "123 Main St, City",
+                status: "active",
+                hireDate: "2023-01-15",
+                carAssigned: "Toyota Camry - CPNC#0001",
+                addedDate: "2023-01-15"
+            },
+            {
+                id: 2,
+                name: "Maria Garcia",
+                license: "DL789012",
+                phone: "+1 (555) 987-6543",
+                email: "maria.g@example.com",
+                address: "456 Oak Ave, Town",
+                status: "active",
+                hireDate: "2023-03-22",
+                carAssigned: "Honda Accord - CPNC#0002",
+                addedDate: "2023-03-22"
+            }
+        ];
+
+        let cars = JSON.parse(localStorage.getItem('taxiCars')) || [
+            {
+                id: 1,
+                cpnc: "0001",
+                model: "Toyota Camry",
+                year: "2022",
+                plate: "ABC-123",
+                color: "Red",
+                mileage: "15000",
+                status: "assigned",
+                insurance: "2024-12-31",
+                assignedTo: "John Smith",
+                addedDate: "2023-01-15"
+            },
+            {
+                id: 2,
+                cpnc: "0002",
+                model: "Honda Accord",
+                year: "2021",
+                plate: "XYZ-789",
+                color: "Blue",
+                mileage: "25000",
+                status: "assigned",
+                insurance: "2024-11-30",
+                assignedTo: "Maria Garcia",
+                addedDate: "2023-03-22"
+            },
+            {
+                id: 3,
+                cpnc: "0003",
+                model: "Ford Fusion",
+                year: "2023",
+                plate: "DEF-456",
+                color: "White",
+                mileage: "5000",
+                status: "available",
+                insurance: "2025-01-31",
+                assignedTo: "",
+                addedDate: "2023-06-10"
+            }
+        ];
+
+        let letters = JSON.parse(localStorage.getItem('taxiLetters')) || [];
+
+        // Initialize the application
+        document.addEventListener('DOMContentLoaded', function() {
+            updateDriverCount();
+            updateCarCount();
+            updateDashboard();
+            renderDriversTable();
+            renderCarsTable();
+            populateCarDropdown();
+            populateLetterDriverDropdown();
+            renderDeleteDriversTable();
+            showSection('dashboard');
+        });
+
+        // Save data to localStorage
+        function saveData() {
+            localStorage.setItem('taxiDrivers', JSON.stringify(drivers));
+            localStorage.setItem('taxiCars', JSON.stringify(cars));
+            localStorage.setItem('taxiLetters', JSON.stringify(letters));
+        }
+
+        // Show/hide sections
+        function showSection(sectionId) {
+            // Hide all sections
+            document.querySelectorAll('.section').forEach(section => {
+                section.classList.remove('active');
+            });
+            
+            // Show selected section
+            document.getElementById(sectionId).classList.add('active');
+            
+            // Update page title
+            const titles = {
+                'dashboard': 'Dashboard',
+                'dataEntry': 'Data Entry',
+                'balance': 'Balance',
+                'driverManagement': 'Driver Management',
+                'carManagement': 'Car Management',
+                'driverLetter': 'Driver Letter',
+                'deleteDriver': 'Delete Driver',
+                'reports': 'Reports',
+                'settings': 'Settings'
+            };
+            document.getElementById('pageTitle').textContent = titles[sectionId];
+            
+            // Update active nav link
+            document.querySelectorAll('.nav-link').forEach(link => {
+                link.classList.remove('active');
+            });
+            
+            // Find and activate the correct nav link
+            const navLinks = document.querySelectorAll('.nav-link');
+            for (let link of navLinks) {
+                if (link.getAttribute('onclick') && link.getAttribute('onclick').includes(sectionId)) {
+                    link.classList.add('active');
+                    break;
+                }
+            }
+            
+            // Update specific sections when shown
+            if (sectionId === 'driverManagement') {
+                renderDriversTable();
+            } else if (sectionId === 'carManagement') {
+                renderCarsTable();
+            } else if (sectionId === 'driverLetter') {
+                updateLetterPreview();
+            } else if (sectionId === 'deleteDriver') {
+                renderDeleteDriversTable();
+            } else if (sectionId === 'dashboard') {
+                updateDashboard();
+            }
+        }
+
+        // DRIVER MANAGEMENT FUNCTIONS
+        function toggleDriverForm() {
+            const form = document.getElementById('driverForm');
+            form.classList.toggle('active');
+            
+            if (form.classList.contains('active')) {
+                document.getElementById('newDriverForm').reset();
+                document.getElementById('hireDate').valueAsDate = new Date();
+                populateCarDropdown();
+            }
+        }
+
+        function addDriver(event) {
+            event.preventDefault();
+            
+            const name = document.getElementById('driverName').value.trim();
+            const license = document.getElementById('driverLicense').value.trim();
+            const phone = document.getElementById('driverPhone').value.trim();
+            const email = document.getElementById('driverEmail').value.trim();
+            const address = document.getElementById('driverAddress').value.trim();
+            const status = document.getElementById('driverStatus').value;
+            const hireDate = document.getElementById('hireDate').value;
+            const carAssigned = document.getElementById('driverCar').value;
+            
+            if (!name || !license || !phone) {
+                showAlert('Please fill in all required fields.', 'error');
+                return;
+            }
+            
+            // Check if license already exists
+            const existingDriver = drivers.find(driver => driver.license === license);
+            if (existingDriver) {
+                showAlert('A driver with this license number already exists.', 'error');
+                return;
+            }
+            
+            // Update car status if assigned
+            if (carAssigned) {
+                const carCPNC = carAssigned.split(' - ')[1];
+                const car = cars.find(c => `CPNC#${c.cpnc}` === carCPNC);
+                if (car) {
+                    car.status = 'assigned';
+                    car.assignedTo = name;
+                }
+            }
+            
+            const newDriver = {
+                id: drivers.length > 0 ? Math.max(...drivers.map(d => d.id)) + 1 : 1,
+                name: name,
+                license: license,
+                phone: phone,
+                email: email || 'N/A',
+                address: address || 'N/A',
+                status: status,
+                hireDate: hireDate || new Date().toISOString().split('T')[0],
+                carAssigned: carAssigned || 'Not assigned',
+                addedDate: new Date().toISOString().split('T')[0]
+            };
+            
+            drivers.push(newDriver);
+            saveData();
+            
+            updateDriverCount();
+            renderDriversTable();
+            updateDashboard();
+            populateLetterDriverDropdown();
+            
+            showAlert(`Driver "${name}" has been added successfully!`, 'success');
+            document.getElementById('newDriverForm').reset();
+            toggleDriverForm();
+        }
+
+        function updateDriverCount() {
+            const driverCount = drivers.length;
+            document.getElementById('driverCount').textContent = driverCount;
+            document.getElementById('totalDrivers').textContent = driverCount;
+        }
+
+        function renderDriversTable() {
+            const tbody = document.getElementById('driversTableBody');
+            
+            if (drivers.length === 0) {
+                tbody.innerHTML = `
+                    <tr>
+                        <td colspan="7" style="text-align: center; padding: 30px; color: var(--gray);">
+                            No drivers found. Click "Add New Driver" to add your first driver.
+                        </td>
+                    </tr>
+                `;
+                return;
+            }
+            
+            let html = '';
+            
+            drivers.forEach(driver => {
+                html += `
+                    <tr>
+                        <td>${driver.id}</td>
+                        <td>${driver.name}</td>
+                        <td>${driver.license}</td>
+                        <td>${driver.phone}</td>
+                        <td><span class="status ${driver.status}">${driver.status}</span></td>
+                        <td>${driver.carAssigned}</td>
+                        <td>
+                            <div class="actions">
+                                <div class="action-btn view" title="View" onclick="viewDriver(${driver.id})">
+                                    <i class="fas fa-eye"></i>
+                                </div>
+                                <div class="action-btn edit" title="Edit" onclick="editDriver(${driver.id})">
+                                    <i class="fas fa-edit"></i>
+                                </div>
+                                <div class="action-btn delete" title="Delete" onclick="deleteDriver(${driver.id})">
+                                    <i class="fas fa-trash"></i>
+                                </div>
+                                <div class="action-btn letter" title="Generate Letter" onclick="generateDriverLetter(${driver.id})">
+                                    <i class="fas fa-envelope"></i>
+                                </div>
+                            </div>
+                        </td>
+                    </tr>
+                `;
+            });
+            
+            tbody.innerHTML = html;
+        }
+
+        function filterDrivers() {
+            const searchTerm = document.getElementById('driverSearch').value.toLowerCase();
+            const statusFilter = document.getElementById('driverStatusFilter').value;
+            const rows = document.querySelectorAll('#driversTableBody tr');
+            
+            rows.forEach(row => {
+                const cells = row.querySelectorAll('td');
+                if (cells.length > 1) {
+                    const name = cells[1].textContent.toLowerCase();
+                    const license = cells[2].textContent.toLowerCase();
+                    const phone = cells[3].textContent.toLowerCase();
+                    const status = cells[4].querySelector('.status')?.textContent.toLowerCase() || '';
+                    
+                    const matchesSearch = name.includes(searchTerm) || 
+                                         license.includes(searchTerm) || 
+                                         phone.includes(searchTerm);
+                    const matchesStatus = !statusFilter || status === statusFilter;
+                    
+                    row.style.display = matchesSearch && matchesStatus ? '' : 'none';
+                }
+            });
+        }
+
+        // CAR MANAGEMENT FUNCTIONS
+        function toggleCarForm() {
+            const form = document.getElementById('carForm');
+            form.classList.toggle('active');
+            
+            if (form.classList.contains('active')) {
+                document.getElementById('newCarForm').reset();
+                document.getElementById('carInsurance').valueAsDate = new Date(new Date().setFullYear(new Date().getFullYear() + 1));
+            }
+        }
+
+        function addCar(event) {
+            event.preventDefault();
+            
+            const model = document.getElementById('carModel').value.trim();
+            const year = document.getElementById('carYear').value.trim();
+            const cpnc = document.getElementById('carCPNC').value.trim();
+            const plate = document.getElementById('carPlate').value.trim();
+            const color = document.getElementById('carColor').value.trim();
+            const mileage = document.getElementById('carMileage').value.trim();
+            const status = document.getElementById('carStatus').value;
+            const insurance = document.getElementById('carInsurance').value;
+            
+            if (!model || !year || !cpnc || !plate) {
+                showAlert('Please fill in all required fields.', 'error');
+                return;
+            }
+            
+            // Check if CPNC already exists
+            const existingCar = cars.find(car => car.cpnc === cpnc);
+            if (existingCar) {
+                showAlert(`Car with CPNC#${cpnc} already exists.`, 'error');
+                return;
+            }
+            
+            // Check if plate already exists
+            const existingPlate = cars.find(car => car.plate === plate);
+            if (existingPlate) {
+                showAlert(`Car with plate ${plate} already exists.`, 'error');
+                return;
+            }
+            
+            const newCar = {
+                id: cars.length > 0 ? Math.max(...cars.map(c => c.id)) + 1 : 1,
+                cpnc: cpnc.padStart(4, '0'),
+                model: model,
+                year: year,
+                plate: plate.toUpperCase(),
+                color: color || 'N/A',
+                mileage: mileage || '0',
+                status: status,
+                insurance: insurance || new Date(new Date().setFullYear(new Date().getFullYear() + 1)).toISOString().split('T')[0],
+                assignedTo: '',
+                addedDate: new Date().toISOString().split('T')[0]
+            };
+            
+            cars.push(newCar);
+            saveData();
+            
+            updateCarCount();
+            renderCarsTable();
+            updateDashboard();
+            populateCarDropdown();
+            
+            showAlert(`Car "${model}" (CPNC#${cpnc}) has been added successfully!`, 'success');
+            document.getElementById('newCarForm').reset();
+            toggleCarForm();
+        }
+
+        function updateCarCount() {
+            const carCount = cars.length;
+            document.getElementById('carCount').textContent = carCount;
+            document.getElementById('totalCars').textContent = carCount;
+        }
+
+        function renderCarsTable() {
+            const tbody = document.getElementById('carsTableBody');
+            
+            if (cars.length === 0) {
+                tbody.innerHTML = `
+                    <tr>
+                        <td colspan="9" style="text-align: center; padding: 30px; color: var(--gray);">
+                            No cars found. Click "Add New Car" to add your first car.
+                        </td>
+                    </tr>
+                `;
+                return;
+            }
+            
+            let html = '';
+            
+            cars.forEach(car => {
+                html += `
+                    <tr>
+                        <td>${car.id}</td>
+                        <td><strong>CPNC#${car.cpnc}</strong></td>
+                        <td>${car.model}</td>
+                        <td>${car.year}</td>
+                        <td>${car.plate}</td>
+                        <td>${car.color}</td>
+                        <td><span class="status ${car.status}">${car.status}</span></td>
+                        <td>${car.assignedTo || 'Not assigned'}</td>
+                        <td>
+                            <div class="actions">
+                                <div class="action-btn view" title="View" onclick="viewCar(${car.id})">
+                                    <i class="fas fa-eye"></i>
+                                </div>
+                                <div class="action-btn edit" title="Edit" onclick="editCar(${car.id})">
+                                    <i class="fas fa-edit"></i>
+                                </div>
+                                <div class="action-btn delete" title="Delete" onclick="deleteCar(${car.id})">
+                                    <i class="fas fa-trash"></i>
+                                </div>
+                            </div>
+                        </td>
+                    </tr>
+                `;
+            });
+            
+            tbody.innerHTML = html;
+        }
+
+        function filterCars() {
+            const searchTerm = document.getElementById('carSearch').value.toLowerCase();
+            const statusFilter = document.getElementById('carStatusFilter').value;
+            const rows = document.querySelectorAll('#carsTableBody tr');
+            
+            rows.forEach(row => {
+                const cells = row.querySelectorAll('td');
+                if (cells.length > 1) {
+                    const cpnc = cells[1].textContent.toLowerCase();
+                    const model = cells[2].textContent.toLowerCase();
+                    const plate = cells[4].textContent.toLowerCase();
+                    const status = cells[6].querySelector('.status')?.textContent.toLowerCase() || '';
+                    
+                    const matchesSearch = cpnc.includes(searchTerm) || 
+                                         model.includes(searchTerm) || 
+                                         plate.includes(searchTerm);
+                    const matchesStatus = !statusFilter || status === statusFilter;
+                    
+                    row.style.display = matchesSearch && matchesStatus ? '' : 'none';
+                }
+            });
+        }
+
+        function populateCarDropdown() {
+            const dropdown = document.getElementById('driverCar');
+            const carDropdown = document.getElementById('letterCar'); // For future use
+            
+            if (dropdown) {
+                dropdown.innerHTML = '<option value="">Select a car</option>';
+                cars.filter(car => car.status === 'available' || car.status === 'assigned').forEach(car => {
+                    const option = document.createElement('option');
+                    option.value = `${car.model} - CPNC#${car.cpnc}`;
+                    option.textContent = `${car.model} - CPNC#${car.cpnc} (${car.plate})`;
+                    dropdown.appendChild(option);
+                });
+            }
+        }
+
+        // DRIVER LETTER FUNCTIONS
+        function populateLetterDriverDropdown() {
+            const dropdown = document.getElementById('letterDriver');
+            
+            if (dropdown) {
+                dropdown.innerHTML = '<option value="">Select a driver...</option>';
+                drivers.forEach(driver => {
+                    const option = document.createElement('option');
+                    option.value = driver.id;
+                    option.textContent = `${driver.name} (${driver.license})`;
+                    dropdown.appendChild(option);
+                });
+            }
+        }
+
+        function updateLetterPreview() {
+            const driverId = document.getElementById('letterDriver').value;
+            const letterType = document.getElementById('letterType').value;
+            const subject = document.getElementById('letterSubject').value;
+            const content = document.getElementById('letterContent').value;
+            
+            const driver = drivers.find(d => d.id == driverId);
+            const today = new Date().toLocaleDateString('en-US', { 
+                year: 'numeric', 
+                month: 'long', 
+                day: 'numeric' 
+            });
+            
+            let letterHtml = `
+                <div class="letter-header">
+                    <h2>TAXI MANAGER COMPANY</h2>
+                    <p>123 Business Street, City, Country</p>
+                    <p>Phone: (555) 123-4567 | Email: info@taximanager.com</p>
+                </div>
+                
+                <div class="letter-date">
+                    <p>Date: ${today}</p>
+                </div>
+                
+                <div>
+                    <p><strong>To:</strong></p>`;
+            
+            if (driver) {
+                letterHtml += `
+                    <p>${driver.name}</p>
+                    <p>${driver.address}</p>
+                    <p>Phone: ${driver.phone}</p>
+                    <p>License: ${driver.license}</p>`;
+            } else {
+                letterHtml += `<p>[Driver Name]</p><p>[Driver Address]</p>`;
+            }
+            
+            letterHtml += `
+                </div>
+                
+                <div style="margin-top: 20px;">
+                    <p><strong>Subject: ${subject}</strong></p>
+                </div>
+                
+                <div style="margin-top: 20px;">
+                    <p>Dear ${driver ? driver.name : '[Driver Name]'},</p>
+                    
+                    <div style="margin-top: 15px; margin-left: 20px;">
+                        ${content.replace(/\n/g, '</p><p>')}
+                    </div>
+                </div>
+                
+                <div class="letter-signature">
+                    <p>Sincerely,</p>
+                    <p><strong>John Doe</strong></p>
+                    <p>Operations Manager</p>
+                    <p>Taxi Manager Company</p>
+                </div>
+                
+                <div class="letter-footer">
+                    <hr>
+                    <p>This is an official letter from Taxi Manager Company. Please keep this for your records.</p>
+                </div>`;
+            
+            document.getElementById('letterPreview').innerHTML = letterHtml;
+        }
+
+        function generateLetter() {
+            const driverId = document.getElementById('letterDriver').value;
+            const letterType = document.getElementById('letterType').value;
+            const subject = document.getElementById('letterSubject').value;
+            const content = document.getElementById('letterContent').value;
+            
+            if (!driverId) {
+                showAlert('Please select a driver first.', 'error');
+                return;
+            }
+            
+            const driver = drivers.find(d => d.id == driverId);
+            const today = new Date().toISOString().split('T')[0];
+            
+            const newLetter = {
+                id: letters.length > 0 ? Math.max(...letters.map(l => l.id)) + 1 : 1,
+                driverId: driverId,
+                driverName: driver.name,
+                letterType: letterType,
+                subject: subject,
+                content: content,
+                date: today,
+                generatedDate: new Date().toISOString()
+            };
+            
+            letters.push(newLetter);
+            saveData();
+            
+            // Update letter count
+            document.getElementById('totalLetters').textContent = letters.length;
+            
+            // Show success and print
+            showAlert(`Letter for ${driver.name} generated successfully!`, 'success');
+            
+            // Auto-print after a delay
+            setTimeout(() => {
+                printLetter();
+            }, 1000);
+        }
+
+        function printLetter() {
+            const printContent = document.getElementById('letterPreview').innerHTML;
+            const originalContent = document.body.innerHTML;
+            
+            document.body.innerHTML = `
+                <!DOCTYPE html>
+                <html>
+                <head>
+                    <title>Driver Letter</title>
+                    <style>
+                        body { font-family: 'Times New Roman', serif; line-height: 1.6; padding: 20px; }
+                        .letter-header { text-align: center; margin-bottom: 30px; }
+                        .letter-date { text-align: right; margin-bottom: 20px; }
+                        .letter-signature { margin-top: 50px; }
+                        .letter-footer { margin-top: 40px; font-size: 0.9em; color: #666; }
+                    </style>
+                </head>
+                <body>${printContent}</body>
+                </html>`;
+            
+            window.print();
+            document.body.innerHTML = originalContent;
+            showSection('driverLetter');
+        }
+
+        function downloadODT() {
+            const driverId = document.getElementById('letterDriver').value;
+            if (!driverId) {
+                showAlert('Please select a driver first.', 'error');
+                return;
+            }
+            
+            const driver = drivers.find(d => d.id == driverId);
+            const content = document.getElementById('letterPreview').innerText;
+            
+            // Create ODT content (simplified version)
+            const odtContent = `<?xml version="1.0" encoding="UTF-8"?>
+<office:document-content xmlns:office="urn:oasis:names:tc:opendocument:xmlns:office:1.0"
+                        xmlns:text="urn:oasis:names:tc:opendocument:xmlns:text:1.0">
+    <office:body>
+        <office:text>
+            <text:p text:style-name="P1">TAXI MANAGER COMPANY</text:p>
+            <text:p text:style-name="P1">123 Business Street, City, Country</text:p>
+            <text:p text:style-name="P1">Phone: (555) 123-4567 | Email: info@taximanager.com</text:p>
+            <text:p text:style-name="P1"/>
+            <text:p text:style-name="P1">Date: ${new Date().toLocaleDateString()}</text:p>
+            <text:p text:style-name="P1"/>
+            <text:p text:style-name="P1"><text:span text:style-name="T1">To:</text:span></text:p>
+            <text:p text:style-name="P1">${driver.name}</text:p>
+            <text:p text:style-name="P1">${driver.address}</text:p>
+            <text:p text:style-name="P1">Phone: ${driver.phone}</text:p>
+            <text:p text:style-name="P1"/>
+            <text:p text:style-name="P1"><text:span text:style-name="T1">Subject: ${document.getElementById('letterSubject').value}</text:span></text:p>
+            <text:p text:style-name="P1"/>
+            <text:p text:style-name="P1">Dear ${driver.name},</text:p>
+            <text:p text:style-name="P1"/>
+            ${content.split('\n').map(line => `<text:p text:style-name="P1">${line}</text:p>`).join('\n            ')}
+            <text:p text:style-name="P1"/>
+            <text:p text:style-name="P1">Sincerely,</text:p>
+            <text:p text:style-name="P1">John Doe</text:p>
+            <text:p text:style-name="P1">Operations Manager</text:p>
+            <text:p text:style-name="P1">Taxi Manager Company</text:p>
+        </office:text>
+    </office:body>
+</office:document-content>`;
+            
+            const blob = new Blob([odtContent], { type: 'application/vnd.oasis.opendocument.text' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `Driver_Letter_${driver.name.replace(/\s+/g, '_')}_${new Date().getTime()}.odt`;
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            URL.revokeObjectURL(url);
+            
+            showAlert(`ODT file for ${driver.name} downloaded successfully!`, 'success');
+        }
+
+        function generateDriverLetter(driverId) {
+            showSection('driverLetter');
+            document.getElementById('letterDriver').value = driverId;
+            updateLetterPreview();
+        }
+
+        // DELETE DRIVER SECTION
+        function renderDeleteDriversTable() {
+            const tbody = document.getElementById('deleteDriversTableBody');
+            
+            if (drivers.length === 0) {
+                tbody.innerHTML = `
+                    <tr>
+                        <td colspan="7" style="text-align: center; padding: 30px; color: var(--gray);">
+                            No drivers to delete.
+                        </td>
+                    </tr>
+                `;
+                return;
+            }
+            
+            let html = '';
+            
+            drivers.forEach(driver => {
+                html += `
+                    <tr>
+                        <td><input type="checkbox" class="driver-select" value="${driver.id}"></td>
+                        <td>${driver.id}</td>
+                        <td>${driver.name}</td>
+                        <td>${driver.license}</td>
+                        <td>${driver.phone}</td>
+                        <td><span class="status ${driver.status}">${driver.status}</span></td>
+                        <td>
+                            <button class="btn btn-danger btn-sm" onclick="deleteSingleDriver(${driver.id})">
+                                <i class="fas fa-trash"></i> Delete
+                            </button>
+                        </td>
+                    </tr>
+                `;
+            });
+            
+            tbody.innerHTML = html;
+        }
+
+        function deleteSelectedDrivers() {
+            const selected = document.querySelectorAll('.driver-select:checked');
+            if (selected.length === 0) {
+                showAlert('Please select at least one driver to delete.', 'error');
+                return;
+            }
+            
+            if (!confirm(`Are you sure you want to delete ${selected.length} driver(s)? This action cannot be undone.`)) {
+                return;
+            }
+            
+            const deletedDrivers = [];
+            selected.forEach(checkbox => {
+                const driverId = parseInt(checkbox.value);
+                const driverIndex = drivers.findIndex(d => d.id === driverId);
+                if (driverIndex !== -1) {
+                    deletedDrivers.push(drivers[driverIndex].name);
+                    drivers.splice(driverIndex, 1);
+                }
+            });
+            
+            saveData();
+            updateDriverCount();
+            updateDashboard();
+            renderDeleteDriversTable();
+            renderDriversTable();
+            populateLetterDriverDropdown();
+            
+            showAlert(`Successfully deleted ${deletedDrivers.length} driver(s): ${deletedDrivers.join(', ')}`, 'success');
+        }
+
+        function deleteSingleDriver(driverId) {
+            const driver = drivers.find(d => d.id === driverId);
+            if (!driver) return;
+            
+            if (!confirm(`Are you sure you want to delete driver "${driver.name}"? This action cannot be undone.`)) {
+                return;
+            }
+            
+            // Remove car assignment if any
+            if (driver.carAssigned && driver.carAssigned !== 'Not assigned') {
+                const carCPNC = driver.carAssigned.split(' - ')[1];
+                const car = cars.find(c => `CPNC#${c.cpnc}` === carCPNC);
+                if (car) {
+                    car.status = 'available';
+                    car.assignedTo = '';
+                }
+            }
+            
+            const driverIndex = drivers.findIndex(d => d.id === driverId);
+            drivers.splice(driverIndex, 1);
+            saveData();
+            
+            updateDriverCount();
+            updateDashboard();
+            renderDeleteDriversTable();
+            renderDriversTable();
+            populateLetterDriverDropdown();
+            
+            showAlert(`Driver "${driver.name}" has been deleted successfully.`, 'success');
+        }
+
+        // VIEW/EDIT FUNCTIONS
+        function viewDriver(id) {
+            const driver = drivers.find(d => d.id === id);
+            if (!driver) return;
+            
+            const modalContent = `
+                <div style="display: grid; gap: 15px;">
+                    <div><strong>Driver ID:</strong> ${driver.id}</div>
+                    <div><strong>Full Name:</strong> ${driver.name}</div>
+                    <div><strong>License Number:</strong> ${driver.license}</div>
+                    <div><strong>Phone:</strong> ${driver.phone}</div>
+                    <div><strong>Email:</strong> ${driver.email}</div>
+                    <div><strong>Address:</strong> ${driver.address}</div>
+                    <div><strong>Status:</strong> <span class="status ${driver.status}">${driver.status}</span></div>
+                    <div><strong>Hire Date:</strong> ${driver.hireDate}</div>
+                    <div><strong>Car Assigned:</strong> ${driver.carAssigned}</div>
+                    <div><strong>Added Date:</strong> ${driver.addedDate}</div>
+                </div>
+                <div style="margin-top: 20px; display: flex; gap: 10px;">
+                    <button class="btn btn-primary" onclick="editDriver(${driver.id}); closeModal();">Edit Driver</button>
+                    <button class="btn btn-info" onclick="generateDriverLetter(${driver.id}); closeModal();">Generate Letter</button>
+                    <button class="btn" onclick="closeModal()">Close</button>
+                </div>`;
+            
+            openModal('Driver Details', modalContent);
+        }
+
+        function viewCar(id) {
+            const car = cars.find(c => c.id === id);
+            if (!car) return;
+            
+            const modalContent = `
+                <div style="display: grid; gap: 15px;">
+                    <div><strong>Car ID:</strong> ${car.id}</div>
+                    <div><strong>CPNC Number:</strong> CPNC#${car.cpnc}</div>
+                    <div><strong>Model:</strong> ${car.model}</div>
+                    <div><strong>Year:</strong> ${car.year}</div>
+                    <div><strong>License Plate:</strong> ${car.plate}</div>
+                    <div><strong>Color:</strong> ${car.color}</div>
+                    <div><strong>Mileage:</strong> ${car.mileage} km</div>
+                    <div><strong>Status:</strong> <span class="status ${car.status}">${car.status}</span></div>
+                    <div><strong>Assigned To:</strong> ${car.assignedTo || 'Not assigned'}</div>
+                    <div><strong>Insurance Expiry:</strong> ${car.insurance}</div>
+                    <div><strong>Added Date:</strong> ${car.addedDate}</div>
+                </div>
+                <div style="margin-top: 20px; display: flex; gap: 10px;">
+                    <button class="btn btn-primary" onclick="editCar(${car.id}); closeModal();">Edit Car</button>
+                    <button class="btn" onclick="closeModal()">Close</button>
+                </div>`;
+            
+            openModal('Car Details', modalContent);
+        }
+
+        function editDriver(id) {
+            showSection('driverManagement');
+            const driver = drivers.find(d => d.id === id);
+            if (!driver) return;
+            
+            // Populate form
+            document.getElementById('driverName').value = driver.name;
+            document.getElementById('driverLicense').value = driver.license;
+            document.getElementById('driverPhone').value = driver.phone;
+            document.getElementById('driverEmail').value = driver.email;
+            document.getElementById('driverAddress').value = driver.address;
+            document.getElementById('driverStatus').value = driver.status;
+            document.getElementById('hireDate').value = driver.hireDate;
+            document.getElementById('driverCar').value = driver.carAssigned;
+            
+            // Show form
+            const form = document.getElementById('driverForm');
+            if (!form.classList.contains('active')) {
+                toggleDriverForm();
+            }
+            
+            // Change form to edit mode
+            document.querySelector('#driverForm h3').textContent = 'Edit Driver';
+            const submitBtn = document.querySelector('#newDriverForm button[type="submit"]');
+            submitBtn.innerHTML = '<i class="fas fa-save"></i> Update Driver';
+            submitBtn.onclick = function(e) {
+                e.preventDefault();
+                updateDriverRecord(id);
+            };
+        }
+
+        function updateDriverRecord(id) {
+            const name = document.getElementById('driverName').value.trim();
+            const license = document.getElementById('driverLicense').value.trim();
+            const phone = document.getElementById('driverPhone').value.trim();
+            const email = document.getElementById('driverEmail').value.trim();
+            const address = document.getElementById('driverAddress').value.trim();
+            const status = document.getElementById('driverStatus').value;
+            const hireDate = document.getElementById('hireDate').value;
+            const carAssigned = document.getElementById('driverCar').value;
+            
+            const driverIndex = drivers.findIndex(d => d.id === id);
+            if (driverIndex === -1) return;
+            
+            // Update old car assignment
+            const oldCarAssigned = drivers[driverIndex].carAssigned;
+            if (oldCarAssigned && oldCarAssigned !== carAssigned) {
+                const oldCarCPNC = oldCarAssigned.split(' - ')[1];
+                const oldCar = cars.find(c => `CPNC#${c.cpnc}` === oldCarCPNC);
+                if (oldCar) {
+                    oldCar.status = 'available';
+                    oldCar.assignedTo = '';
+                }
+            }
+            
+            // Update new car assignment
+            if (carAssigned && carAssigned !== 'Not assigned') {
+                const newCarCPNC = carAssigned.split(' - ')[1];
+                const newCar = cars.find(c => `CPNC#${c.cpnc}` === newCarCPNC);
+                if (newCar) {
+                    newCar.status = 'assigned';
+                    newCar.assignedTo = name;
+                }
+            }
+            
+            drivers[driverIndex] = {
+                ...drivers[driverIndex],
+                name,
+                license,
+                phone,
+                email,
+                address,
+                status,
+                hireDate,
+                carAssigned
+            };
+            
+            saveData();
+            renderDriversTable();
+            renderCarsTable();
+            populateCarDropdown();
+            showAlert(`Driver "${name}" updated successfully!`, 'success');
+            toggleDriverForm();
+        }
+
+        function editCar(id) {
+            showSection('carManagement');
+            const car = cars.find(c => c.id === id);
+            if (!car) return;
+            
+            // Populate form
+            document.getElementById('carModel').value = car.model;
+            document.getElementById('carYear').value = car.year;
+            document.getElementById('carCPNC').value = car.cpnc;
+            document.getElementById('carPlate').value = car.plate;
+            document.getElementById('carColor').value = car.color;
+            document.getElementById('carMileage').value = car.mileage;
+            document.getElementById('carStatus').value = car.status;
+            document.getElementById('carInsurance').value = car.insurance;
+            
+            // Show form
+            const form = document.getElementById('carForm');
+            if (!form.classList.contains('active')) {
+                toggleCarForm();
+            }
+            
+            // Change form to edit mode
+            document.querySelector('#carForm h3').textContent = 'Edit Car';
+            const submitBtn = document.querySelector('#newCarForm button[type="submit"]');
+            submitBtn.innerHTML = '<i class="fas fa-save"></i> Update Car';
+            submitBtn.onclick = function(e) {
+                e.preventDefault();
+                updateCarRecord(id);
+            };
+        }
+
+        function updateCarRecord(id) {
+            const model = document.getElementById('carModel').value.trim();
+            const year = document.getElementById('carYear').value.trim();
+            const cpnc = document.getElementById('carCPNC').value.trim();
+            const plate = document.getElementById('carPlate').value.trim();
+            const color = document.getElementById('carColor').value.trim();
+            const mileage = document.getElementById('carMileage').value.trim();
+            const status = document.getElementById('carStatus').value;
+            const insurance = document.getElementById('carInsurance').value;
+            
+            const carIndex = cars.findIndex(c => c.id === id);
+            if (carIndex === -1) return;
+            
+            cars[carIndex] = {
+                ...cars[carIndex],
+                model,
+                year,
+                cpnc,
+                plate,
+                color,
+                mileage,
+                status,
+                insurance
+            };
+            
+            saveData();
+            renderCarsTable();
+            populateCarDropdown();
+            showAlert(`Car "${model}" (CPNC#${cpnc}) updated successfully!`, 'success');
+            toggleCarForm();
+        }
+
+        function deleteDriver(id) {
+            const driver = drivers.find(d => d.id === id);
+            if (!driver) return;
+            
+            if (!confirm(`Are you sure you want to delete driver "${driver.name}"?`)) {
+                return;
+            }
+            
+            // Remove car assignment if any
+            if (driver.carAssigned && driver.carAssigned !== 'Not assigned') {
+                const carCPNC = driver.carAssigned.split(' - ')[1];
+                const car = cars.find(c => `CPNC#${c.cpnc}` === carCPNC);
+                if (car) {
+                    car.status = 'available';
+                    car.assignedTo = '';
+                }
+            }
+            
+            const driverIndex = drivers.findIndex(d => d.id === id);
+            drivers.splice(driverIndex, 1);
+            saveData();
+            
+            updateDriverCount();
+            renderDriversTable();
+            renderCarsTable();
+            populateLetterDriverDropdown();
+            renderDeleteDriversTable();
+            
+            showAlert(`Driver "${driver.name}" has been deleted.`, 'success');
+        }
+
+        function deleteCar(id) {
+            const car = cars.find(c => c.id === id);
+            if (!car) return;
+            
+            // Check if car is assigned to a driver
+            if (car.status === 'assigned' && car.assignedTo) {
+                showAlert(`Cannot delete car assigned to ${car.assignedTo}. Please unassign the driver first.`, 'error');
+                return;
+            }
+            
+            if (!confirm(`Are you sure you want to delete car "${car.model}" (CPNC#${car.cpnc})?`)) {
+                return;
+            }
+            
+            const carIndex = cars.findIndex(c => c.id === id);
+            cars.splice(carIndex, 1);
+            saveData();
+            
+            updateCarCount();
+            renderCarsTable();
+            populateCarDropdown();
+            
+            showAlert(`Car "${car.model}" (CPNC#${car.cpnc}) has been deleted.`, 'success');
+        }
+
+        // EXPORT FUNCTIONS
+        function exportDriversToCSV() {
+            if (drivers.length === 0) {
+                showAlert('No drivers to export.', 'error');
+                return;
+            }
+            
+            const headers = ['ID', 'Name', 'License', 'Phone', 'Email', 'Address', 'Status', 'Hire Date', 'Car Assigned', 'Added Date'];
+            const rows = drivers.map(driver => [
+                driver.id,
+                `"${driver.name}"`,
+                driver.license,
+                driver.phone,
+                `"${driver.email}"`,
+                `"${driver.address}"`,
+                driver.status,
+                driver.hireDate,
+                `"${driver.carAssigned}"`,
+                driver.addedDate
+            ]);
+            
+            const csvContent = [
+                headers.join(','),
+                ...rows.map(row => row.join(','))
+            ].join('\n');
+            
+            downloadCSV(csvContent, `taxi_drivers_${new Date().toISOString().slice(0,10)}.csv`);
+            showAlert('Drivers exported to CSV successfully!', 'success');
+        }
+
+        function exportCarsToCSV() {
+            if (cars.length === 0) {
+                showAlert('No cars to export.', 'error');
+                return;
+            }
+            
+            const headers = ['ID', 'CPNC#', 'Model', 'Year', 'Plate', 'Color', 'Mileage', 'Status', 'Assigned To', 'Insurance Expiry', 'Added Date'];
+            const rows = cars.map(car => [
+                car.id,
+                `CPNC#${car.cpnc}`,
+                `"${car.model}"`,
+                car.year,
+                car.plate,
+                `"${car.color}"`,
+                car.mileage,
+                car.status,
+                `"${car.assignedTo}"`,
+                car.insurance,
+                car.addedDate
+            ]);
+            
+            const csvContent = [
+                headers.join(','),
+                ...rows.map(row => row.join(','))
+            ].join('\n');
+            
+            downloadCSV(csvContent, `taxi_cars_${new Date().toISOString().slice(0,10)}.csv`);
+            showAlert('Cars exported to CSV successfully!', 'success');
+        }
+
+        function downloadCSV(content, filename) {
+            const blob = new Blob([content], { type: 'text/csv;charset=utf-8;' });
+            const url = URL.createObjectURL(blob);
+            const link = document.createElement('a');
+            link.href = url;
+            link.download = filename;
+            link.style.visibility = 'hidden';
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+            URL.revokeObjectURL(url);
+        }
+
+        // DASHBOARD FUNCTIONS
+        function updateDashboard() {
+            // Update counts
+            document.getElementById('totalDrivers').textContent = drivers.length;
+            document.getElementById('totalCars').textContent = cars.length;
+            document.getElementById('totalLetters').textContent = letters.length;
+            
+            // Calculate total balance (placeholder calculation)
+            const totalBalance = drivers.filter(d => d.status === 'active').length * 1250;
+            document.getElementById('totalBalance').textContent = `$${totalBalance.toLocaleString()}`;
+            
+            // Update recent drivers table
+            updateRecentDriversTable();
+            
+            // Update recent cars table
+            updateRecentCarsTable();
+        }
+
+        function updateRecentDriversTable() {
+            const recentDrivers = drivers.slice(-5).reverse();
+            const recentTable = document.getElementById('recentDriversTable');
+            
+            if (recentDrivers.length > 0) {
+                let html = '<table><thead><tr><th>Name</th><th>License</th><th>Phone</th><th>Status</th><th>Car</th></tr></thead><tbody>';
+                
+                recentDrivers.forEach(driver => {
+                    html += `
+                        <tr>
+                            <td>${driver.name}</td>
+                            <td>${driver.license}</td>
+                            <td>${driver.phone}</td>
+                            <td><span class="status ${driver.status}">${driver.status}</span></td>
+                            <td>${driver.carAssigned.split(' - ')[0] || 'None'}</td>
+                        </tr>
+                    `;
+                });
+                
+                html += '</tbody></table>';
+                recentTable.innerHTML = html;
+            } else {
+                recentTable.innerHTML = '<p style="padding: 20px; text-align: center; color: var(--gray);">No drivers added yet.</p>';
+            }
+        }
+
+        function updateRecentCarsTable() {
+            const recentCars = cars.slice(-5).reverse();
+            const recentTable = document.getElementById('recentCarsTable');
+            
+            if (recentCars.length > 0) {
+                let html = '<table><thead><tr><th>Model</th><th>CPNC#</th><th>Plate</th><th>Status</th><th>Assigned</th></tr></thead><tbody>';
+                
+                recentCars.forEach(car => {
+                    html += `
+                        <tr>
+                            <td>${car.model}</td>
+                            <td>CPNC#${car.cpnc}</td>
+                            <td>${car.plate}</td>
+                            <td><span class="status ${car.status}">${car.status}</span></td>
+                            <td>${car.assignedTo || 'None'}</td>
+                        </tr>
+                    `;
+                });
+                
+                html += '</tbody></table>';
+                recentTable.innerHTML = html;
+            } else {
+                recentTable.innerHTML = '<p style="padding: 20px; text-align: center; color: var(--gray);">No cars added yet.</p>';
+            }
+        }
+
+        // MODAL FUNCTIONS
+        function openModal(title, content) {
+            document.getElementById('modalTitle').textContent = title;
+            document.getElementById('modalContent').innerHTML = content;
+            document.getElementById('viewModal').classList.add('active');
+        }
+
+        function closeModal() {
+            document.getElementById('viewModal').classList.remove('active');
+        }
+
+        // ALERT FUNCTION
+        function showAlert(message, type) {
+            const alertContainer = document.getElementById('alertContainer');
+            
+            const alertDiv = document.createElement('div');
+            alertDiv.className = `alert ${type}`;
+            alertDiv.innerHTML = `
+                <span>${message}</span>
+                <button onclick="this.parentElement.style.display='none'" style="float: right; background: none; border: none; cursor: pointer; font-size: 1.2rem;">×</button>
+            `;
+            
+            alertContainer.innerHTML = '';
+            alertContainer.appendChild(alertDiv);
+            
+            setTimeout(() => {
+                if (alertDiv.parentElement) {
+                    alertDiv.style.display = 'none';
+                }
+            }, 5000);
+        }
+    </script>
+</body>
+</html>

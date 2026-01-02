@@ -1,0 +1,5 @@
+# If you have the repo locally:
+git mv txt requirements.txt
+git commit -m "Rename txt to requirements.txt"
+git push origin main
+

@@ -1,0 +1,8 @@
+taxi-manager/
+├── app.py
+├── requirements.txt
+├── setup.py  # if you have local packages
+└── your_package/  # move code here instead of separate dir
+    ├── __init__.py
+    └── modules.py
+
