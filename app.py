@@ -1,3 +1,3 @@
 ﻿import streamlit as st
-st.title("Taxi Manager Test")
-st.write("If this works, your deployment is fixed!")
+st.title("Taxi Manager")
+st.write("Working version")
