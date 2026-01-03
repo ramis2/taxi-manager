@@ -1,4 +1,4 @@
-# app.py - Complete Taxi Manager with ALL your requested features
+# app.py - Fixed Taxi Manager
 import streamlit as st
 import sqlite3
 import pandas as pd
@@ -12,7 +12,7 @@ st.set_page_config(
     layout="wide"
 )
 
-# Initialize database
+# Initialize database with corrected schema
 def init_database():
     conn = sqlite3.connect('taxi_manager.db')
     c = conn.cursor()
@@ -47,7 +47,7 @@ def init_database():
         )
     ''')
     
-    # Create letters table
+    # Create letters table - FIXED SCHEMA
     c.execute('''
         CREATE TABLE IF NOT EXISTS letters (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -55,7 +55,7 @@ def init_database():
             letter_type TEXT,
             letter_date DATE,
             content TEXT,
-            generated_date TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
         )
     ''')
     
@@ -100,11 +100,12 @@ def get_cars():
     return execute_query("SELECT * FROM cars ORDER BY id", fetch=True)
 
 def get_letters():
+    # FIXED QUERY - using created_at instead of generated_date
     return execute_query("""
         SELECT letters.*, drivers.name 
         FROM letters 
         LEFT JOIN drivers ON letters.driver_id = drivers.id 
-        ORDER BY letters.generated_date DESC
+        ORDER BY letters.created_at DESC
     """, fetch=True)
 
 def get_trips():
@@ -168,6 +169,15 @@ def delete_driver(driver_id):
     except:
         return False
 
+# Initialize database (drop and recreate to fix schema)
+def reset_database():
+    if os.path.exists('taxi_manager.db'):
+        os.remove('taxi_manager.db')
+    init_database()
+
+# Uncomment this line if you want to reset the database
+# reset_database()
+
 # Initialize database
 init_database()
 
@@ -201,11 +211,11 @@ st.markdown("""
 </style>
 """, unsafe_allow_html=True)
 
-# Sidebar - Main Menu (EXACTLY like your screenshot)
+# Sidebar - Main Menu
 st.sidebar.image("https://cdn-icons-png.flaticon.com/512/3097/3097139.png", width=100)
 st.sidebar.title("TaxiManager")
 
-# Menu options matching your screenshot
+# Menu options
 menu_options = [
     "Dashboard",
     "Data Entry",
@@ -220,6 +230,11 @@ menu_options = [
 
 menu = st.sidebar.radio("", menu_options)
 
+# Add a button to reset database in sidebar (for debugging)
+if st.sidebar.button("Reset Database (Debug)"):
+    reset_database()
+    st.sidebar.success("Database reset successfully!")
+
 # DASHBOARD
 if menu == "Dashboard":
     st.title("📊 Dashboard")
@@ -230,7 +245,7 @@ if menu == "Dashboard":
     letters = get_letters()
     trips = get_trips()
     
-    # Metrics row - EXACTLY like your screenshot
+    # Metrics row
     col1, col2, col3 = st.columns(3)
     
     with col1:
@@ -253,13 +268,13 @@ if menu == "Dashboard":
     
     st.markdown("---")
     
-    # Recent Drivers - EXACTLY like your screenshot
+    # Recent Drivers
     col1, col2 = st.columns(2)
     
     with col1:
         st.subheader("Recent Drivers")
         if drivers:
-            recent_drivers = drivers[:5]  # Show only 5 most recent
+            recent_drivers = drivers[:5]
             drivers_df = pd.DataFrame(recent_drivers, columns=['ID', 'Name', 'License', 'Phone', 'Email', 'Address', 'Status', 'Join Date'])
             st.dataframe(drivers_df[['Name', 'License', 'Phone', 'Status']], hide_index=True)
         else:
@@ -599,8 +614,8 @@ elif menu == "Driver Letter":
             st.subheader("Generated Letters History")
             letters = get_letters()
             if letters:
-                letters_df = pd.DataFrame(letters, columns=['ID', 'Driver ID', 'Type', 'Date', 'Content', 'Generated', 'Driver Name'])
-                st.dataframe(letters_df[['Driver Name', 'Type', 'Date', 'Generated']])
+                letters_df = pd.DataFrame(letters, columns=['ID', 'Driver ID', 'Type', 'Date', 'Content', 'Created', 'Driver Name'])
+                st.dataframe(letters_df[['Driver Name', 'Type', 'Date', 'Created']])
                 
                 # View specific letter
                 if st.checkbox("View Letter Details"):
