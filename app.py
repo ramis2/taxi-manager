@@ -1,4 +1,4 @@
-# app.py - Taxi Manager (No PDF version)
+# app.py - Taxi Manager (Fixed Letters Page)
 import streamlit as st
 import pandas as pd
 import sqlite3
@@ -77,6 +77,10 @@ if 'current_letter_id' not in st.session_state:
     st.session_state.current_letter_id = None
 if 'selected_drivers' not in st.session_state:
     st.session_state.selected_drivers = []
+if 'letter_content' not in st.session_state:
+    st.session_state.letter_content = ""
+if 'letter_template' not in st.session_state:
+    st.session_state.letter_template = ""
 
 init_db()
 
@@ -170,7 +174,7 @@ def update_settings(settings_dict):
     conn.commit()
     conn.close()
 
-# Simple text letter generator (no PDF)
+# Simple text letter generator
 def generate_text_letter(driver_info, letter_type, subject, content, settings):
     company_name = settings.get('company_name', 'Taxi Manager')
     company_address = settings.get('company_address', '123 Taxi Street, Mumbai')
@@ -426,7 +430,7 @@ elif menu == "DRIVERS":
                 st.session_state.delete_confirm = None
                 st.rerun()
 
-# LETTERS PAGE
+# LETTERS PAGE - FIXED VERSION
 elif menu == "LETTERS":
     st.title("DRIVER LETTERS & NOTIFICATIONS")
     
@@ -471,13 +475,59 @@ elif menu == "LETTERS":
                 st.write("---")
                 st.write(letter['content'][:200] + "...")
     
-    # Write New Letter / Edit Letter
+    # Write New Letter / Edit Letter - FIXED!
     if st.session_state.current_letter_id:
         st.subheader("WRITE NEW LETTER" if st.session_state.current_letter_id == 'new' else "EDIT LETTER")
         
         drivers_df = get_drivers()
         settings = get_settings()
         
+        # Template buttons OUTSIDE the form
+        st.write("QUICK TEMPLATES:")
+        col1, col2, col3 = st.columns(3)
+        
+        with col1:
+            if st.button("APPOINTMENT LETTER", use_container_width=True):
+                st.session_state.letter_template = "APPOINTMENT"
+                st.session_state.letter_content = f"""We are pleased to appoint you as a driver with {settings.get('company_name', 'our company')}.
+
+Your duties will include:
+1. Safe transportation of passengers
+2. Maintaining vehicle cleanliness
+3. Following all traffic rules
+4. Reporting daily earnings
+
+Please report to the office on Monday at 9:00 AM for further instructions."""
+                st.rerun()
+        
+        with col2:
+            if st.button("WARNING LETTER", use_container_width=True):
+                st.session_state.letter_template = "WARNING"
+                st.session_state.letter_content = f"""This is a formal warning regarding your recent conduct.
+
+It has come to our attention that:
+- [Specify issue]
+- [Specify issue]
+
+Please rectify these issues immediately. Failure to do so may result in further disciplinary action.
+
+You are required to meet with the manager within 3 days to discuss this matter."""
+                st.rerun()
+        
+        with col3:
+            if st.button("MEETING NOTICE", use_container_width=True):
+                st.session_state.letter_template = "MEETING"
+                st.session_state.letter_content = f"""This is to inform you about an important meeting.
+
+Date: [Enter Date]
+Time: [Enter Time]
+Venue: {settings.get('company_address', 'Office')}
+Agenda: [Specify agenda]
+
+Your attendance is mandatory. Please be punctual."""
+                st.rerun()
+        
+        # Main form for letter details
         with st.form(key="letter_form"):
             # Select driver(s)
             if st.session_state.current_letter_id == 'new':
@@ -499,57 +549,20 @@ elif menu == "LETTERS":
             letter_types = ["APPOINTMENT LETTER", "WARNING LETTER", "NOTICE", "PAYMENT REMINDER", "MEETING NOTICE", "GENERAL MESSAGE"]
             
             if st.session_state.current_letter_id == 'new':
-                letter_type = st.selectbox("LETTER TYPE", letter_types)
+                if st.session_state.letter_template:
+                    default_type = st.session_state.letter_template
+                else:
+                    default_type = "GENERAL MESSAGE"
+                letter_type = st.selectbox("LETTER TYPE", letter_types, index=letter_types.index(default_type) if default_type in letter_types else 0)
                 subject = st.text_input("SUBJECT", placeholder="Subject of the letter...")
             else:
+                letter_data = get_letter_by_id(st.session_state.current_letter_id)
                 letter_type = st.selectbox("LETTER TYPE", letter_types, index=letter_types.index(letter_data[2]) if letter_data and letter_data[2] in letter_types else 0)
                 subject = st.text_input("SUBJECT", value=letter_data[3] if letter_data else "")
             
-            # Letter content templates
-            st.write("QUICK TEMPLATES:")
-            col1, col2, col3 = st.columns(3)
-            
-            template_content = ""
-            with col1:
-                if st.button("APPOINTMENT"):
-                    template_content = f"""We are pleased to appoint you as a driver with {settings.get('company_name', 'our company')}.
-
-Your duties will include:
-1. Safe transportation of passengers
-2. Maintaining vehicle cleanliness
-3. Following all traffic rules
-4. Reporting daily earnings
-
-Please report to the office on Monday at 9:00 AM for further instructions."""
-            
-            with col2:
-                if st.button("WARNING"):
-                    template_content = f"""This is a formal warning regarding your recent conduct.
-
-It has come to our attention that:
-- [Specify issue]
-- [Specify issue]
-
-Please rectify these issues immediately. Failure to do so may result in further disciplinary action.
-
-You are required to meet with the manager within 3 days to discuss this matter."""
-            
-            with col3:
-                if st.button("MEETING"):
-                    template_content = f"""This is to inform you about an important meeting.
-
-Date: [Enter Date]
-Time: [Enter Time]
-Venue: {settings.get('company_address', 'Office')}
-Agenda: [Specify agenda]
-
-Your attendance is mandatory. Please be punctual."""
-            
             # Letter content
             if st.session_state.current_letter_id == 'new':
-                if template_content:
-                    default_content = template_content
-                else:
+                if not st.session_state.letter_content:
                     default_content = f"""Dear Driver,
 
 
@@ -557,6 +570,8 @@ Your attendance is mandatory. Please be punctual."""
 Yours sincerely,
 {settings.get('manager_name', 'Manager')}
 {settings.get('company_name', 'Taxi Manager')}"""
+                else:
+                    default_content = st.session_state.letter_content
             else:
                 default_content = letter_data[4] if letter_data else ""
             
@@ -566,7 +581,7 @@ Yours sincerely,
             with col1:
                 submit = st.form_submit_button("SAVE LETTER", type="primary", use_container_width=True)
             with col2:
-                generate = st.form_submit_button("PREVIEW LETTER", use_container_width=True)
+                preview = st.form_submit_button("PREVIEW LETTER", use_container_width=True)
             with col3:
                 cancel = st.form_submit_button("CANCEL", use_container_width=True)
             
@@ -582,13 +597,16 @@ Yours sincerely,
                             update_letter(st.session_state.current_letter_id, (selected_driver, letter_type, subject, content, datetime.now().strftime("%Y-%m-%d"), "Sent"))
                             st.success("Letter updated successfully!")
                         
+                        # Reset session state
                         st.session_state.current_letter_id = None
                         st.session_state.selected_drivers = []
+                        st.session_state.letter_content = ""
+                        st.session_state.letter_template = ""
                         st.rerun()
                     except Exception as e:
                         st.error(f"Error: {str(e)}")
             
-            if generate:
+            if preview:
                 if selected_driver and selected_driver != "ALL":
                     driver_info = get_driver_by_id(selected_driver)
                     letter_text = generate_text_letter(driver_info, letter_type, subject, content, settings)
@@ -606,6 +624,8 @@ Yours sincerely,
             
             if cancel:
                 st.session_state.current_letter_id = None
+                st.session_state.letter_content = ""
+                st.session_state.letter_template = ""
                 st.rerun()
 
 # Reports Page
