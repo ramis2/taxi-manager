@@ -4,8 +4,6 @@ import sqlite3
 import pandas as pd
 from datetime import datetime
 import os
-from fpdf import FPDF
-import tempfile
 
 # Page config
 st.set_page_config(
@@ -816,6 +814,4 @@ elif menu == "Settings":
 st.sidebar.markdown("---")
 st.sidebar.markdown("**Taxi Manager v2.0**")
 st.sidebar.markdown("All rights reserved © 2024")
-
-# Fixed the unterminated string issue
 st.sidebar.info("To run this app: `streamlit run app.py`")
