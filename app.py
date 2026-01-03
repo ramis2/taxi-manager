@@ -215,7 +215,6 @@ if menu == "📊 Dashboard":
     
     with qcol3:
         if st.button("➕ Add New Driver", use_container_width=True):
-            st.session_state.page = 'drivers'
             st.session_state.edit_driver_id = 'new'
             st.rerun()
 
@@ -287,6 +286,10 @@ elif menu == "👨‍✈️ Drivers":
         with st.form(key="driver_form"):
             if st.session_state.edit_driver_id == 'new':
                 driver_id = st.text_input("Driver ID*", placeholder="DRV001")
+                name = st.text_input("Full Name*", placeholder="John Doe")
+                phone = st.text_input("Phone Number*", placeholder="+91 9876543210")
+                vehicle = st.text_input("Vehicle Number*", placeholder="MH01AB1234")
+                license = st.text_input("License Number", placeholder="DL123456789")
             else:
                 driver_data = get_driver_by_id(st.session_state.edit_driver_id)
                 driver_id = st.text_input("Driver ID*", value=driver_data[0], disabled=True)
@@ -294,12 +297,6 @@ elif menu == "👨‍✈️ Drivers":
                 phone = st.text_input("Phone Number*", value=driver_data[2])
                 vehicle = st.text_input("Vehicle Number*", value=driver_data[3])
                 license = st.text_input("License Number", value=driver_data[4])
-            else:
-                driver_id = st.text_input("Driver ID*", placeholder="DRV001")
-                name = st.text_input("Full Name*", placeholder="John Doe")
-                phone = st.text_input("Phone Number*", placeholder="+91 9876543210")
-                vehicle = st.text_input("Vehicle Number*", placeholder="MH01AB1234")
-                license = st.text_input("License Number", placeholder="DL123456789")
             
             col1, col2 = st.columns(2)
             with col1:
