@@ -817,8 +817,5 @@ st.sidebar.markdown("---")
 st.sidebar.markdown("**Taxi Manager v2.0**")
 st.sidebar.markdown("All rights reserved © 2024")
 
-# Run info
-st.sidebar.info("""
-**To run this app:**
-```bash
-streamlit run app.py
+# Fixed the unterminated string issue
+st.sidebar.info("To run this app: `streamlit run app.py`")
