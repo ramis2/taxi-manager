@@ -1,3 +1,4 @@
+
 import streamlit as st
 import pandas as pd
 import numpy as np
@@ -10,8 +11,6 @@ if 'drivers' not in st.session_state:
     st.session_state.drivers = []
 if 'cars' not in st.session_state:
     st.session_state.cars = []
-if 'rides' not in st.session_state:
-    st.session_state.rides = []
 
 # ==================== SIDEBAR MENU ====================
 st.sidebar.title("📋 TaxiManager")
@@ -61,12 +60,7 @@ if menu == "📊 Dashboard":
         st.subheader("Recent Drivers")
         if st.session_state.drivers:
             drivers_df = pd.DataFrame(st.session_state.drivers)
-            # Select specific columns to match your layout
-            display_cols = ['name', 'license', 'phone', 'status']
-            if all(col in drivers_df.columns for col in display_cols):
-                st.dataframe(drivers_df[display_cols], use_container_width=True)
-            else:
-                st.dataframe(drivers_df, use_container_width=True)
+            st.dataframe(drivers_df, use_container_width=True)
         else:
             st.info("No drivers added yet")
     
@@ -74,12 +68,7 @@ if menu == "📊 Dashboard":
         st.subheader("Recent Cars")
         if st.session_state.cars:
             cars_df = pd.DataFrame(st.session_state.cars)
-            # Select specific columns to match your layout
-            display_cols = ['model', 'cpnc', 'plate', 'status']
-            if all(col in cars_df.columns for col in display_cols):
-                st.dataframe(cars_df[display_cols], use_container_width=True)
-            else:
-                st.dataframe(cars_df, use_container_width=True)
+            st.dataframe(cars_df, use_container_width=True)
         else:
             st.info("No cars added yet")
 
@@ -87,7 +76,7 @@ if menu == "📊 Dashboard":
 elif menu == "📝 Data Entry":
     st.title("Data Entry")
     
-    tab1, tab2, tab3 = st.tabs(["➕ Add Driver", "➕ Add Car", "➕ Add Ride"])
+    tab1, tab2 = st.tabs(["➕ Add Driver", "➕ Add Car"])
     
     with tab1:
         st.subheader("Add New Driver")
@@ -138,7 +127,6 @@ elif menu == "📝 Data Entry":
                 color = st.text_input("Color")
                 mileage = st.number_input("Mileage (km)", min_value=0, value=0)
                 status = st.selectbox("Status", ["Available", "In Service", "Maintenance"])
-                insurance_expiry = st.date_input("Insurance Expiry")
             
             if st.form_submit_button("➕ Add Car"):
                 if model and cpnc and plate:
@@ -151,7 +139,6 @@ elif menu == "📝 Data Entry":
                         'color': color,
                         'mileage': mileage,
                         'status': status,
-                        'insurance_expiry': insurance_expiry.strftime("%Y-%m-%d"),
                         'date_added': datetime.now().strftime("%Y-%m-%d")
                     }
                     st.session_state.cars.append(new_car)
@@ -159,148 +146,31 @@ elif menu == "📝 Data Entry":
                 else:
                     st.error("Please fill required fields (*)")
 
-# ==================== BALANCE ====================
+# ==================== SIMPLE OTHER PAGES ====================
 elif menu == "💰 Balance":
     st.title("Balance")
-    st.write("Financial balance and transactions will appear here")
-
-# ==================== DRIVER MANAGEMENT ====================
+    st.write("Financial balance section")
+    
 elif menu == "👨‍✈️ Driver Management":
     st.title("Driver Management")
+    st.write("Manage drivers here")
     
-    if st.session_state.drivers:
-        for i, driver in enumerate(st.session_state.drivers):
-            with st.expander(f"{driver['name']} - {driver['license']} ({driver['status']})"):
-                col1, col2 = st.columns(2)
-                
-                with col1:
-                    new_name = st.text_input("Name", value=driver['name'], key=f"dr_name_{i}")
-                    new_license = st.text_input("License", value=driver['license'], key=f"dr_license_{i}")
-                    new_phone = st.text_input("Phone", value=driver['phone'], key=f"dr_phone_{i}")
-                
-                with col2:
-                    new_status = st.selectbox(
-                        "Status",
-                        ["Active", "Inactive", "On Leave"],
-                        index=["Active", "Inactive", "On Leave"].index(driver['status']),
-                        key=f"dr_status_{i}"
-                    )
-                    new_email = st.text_input("Email", value=driver.get('email', ''), key=f"dr_email_{i}")
-                    new_address = st.text_input("Address", value=driver.get('address', ''), key=f"dr_address_{i}")
-                
-                col_save, col_del = st.columns(2)
-                with col_save:
-                    if st.button("💾 Save", key=f"save_dr_{i}"):
-                        st.session_state.drivers[i].update({
-                            'name': new_name,
-                            'license': new_license,
-                            'phone': new_phone,
-                            'status': new_status,
-                            'email': new_email,
-                            'address': new_address
-                        })
-                        st.success("Driver updated!")
-                        st.rerun()
-    else:
-        st.info("No drivers to manage")
-
-# ==================== CAR MANAGEMENT ====================
 elif menu == "🚗 Car Management":
     st.title("Car Management")
+    st.write("Manage cars here")
     
-    if st.session_state.cars:
-        for i, car in enumerate(st.session_state.cars):
-            with st.expander(f"{car['model']} - {car['plate']} ({car['status']})"):
-                col1, col2 = st.columns(2)
-                
-                with col1:
-                    new_model = st.text_input("Model", value=car['model'], key=f"car_model_{i}")
-                    new_year = st.number_input("Year", value=car['year'], key=f"car_year_{i}")
-                    new_cpnc = st.text_input("CPNC", value=car['cpnc'], key=f"car_cpnc_{i}")
-                
-                with col2:
-                    new_plate = st.text_input("Plate", value=car['plate'], key=f"car_plate_{i}")
-                    new_color = st.text_input("Color", value=car['color'], key=f"car_color_{i}")
-                    new_mileage = st.number_input("Mileage", value=car['mileage'], key=f"car_mileage_{i}")
-                    new_status = st.selectbox(
-                        "Status",
-                        ["Available", "In Service", "Maintenance"],
-                        index=["Available", "In Service", "Maintenance"].index(car['status']),
-                        key=f"car_status_{i}"
-                    )
-                
-                if st.button("💾 Save", key=f"save_car_{i}"):
-                    st.session_state.cars[i].update({
-                        'model': new_model,
-                        'year': new_year,
-                        'cpnc': new_cpnc,
-                        'plate': new_plate,
-                        'color': new_color,
-                        'mileage': new_mileage,
-                        'status': new_status
-                    })
-                    st.success("Car updated!")
-                    st.rerun()
-    else:
-        st.info("No cars to manage")
-
-# ==================== DRIVER LETTER ====================
 elif menu == "📄 Driver Letter":
     st.title("Driver Letter")
-    st.write("Generate letters and documents for drivers")
-
-# ==================== DELETE DRIVER ====================
+    st.write("Generate driver letters")
+    
 elif menu == "🗑️ Delete Driver":
     st.title("Delete Driver")
+    st.write("Delete drivers here")
     
-    if st.session_state.drivers:
-        driver_options = {f"{d['name']} ({d['license']})": i for i, d in enumerate(st.session_state.drivers)}
-        selected = st.selectbox("Select driver to delete:", list(driver_options.keys()))
-        
-        if selected:
-            idx = driver_options[selected]
-            st.warning(f"Delete {selected}?")
-            
-            if st.button("🗑️ Confirm Delete", type="primary"):
-                del st.session_state.drivers[idx]
-                st.success("Driver deleted!")
-                st.rerun()
-    else:
-        st.info("No drivers to delete")
-
-# ==================== REPORTS ====================
 elif menu == "📈 Reports":
     st.title("Reports")
-    st.write("Generate various reports here")
-
-# ==================== SETTINGS ====================
+    st.write("Generate reports here")
+    
 elif menu == "⚙️ Settings":
     st.title("Settings")
-    
-    st.subheader("Data Management")
-    
-    col1, col2 = st.columns(2)
-    
-    with col1:
-        if st.button("💾 Export All Data"):
-            # Create export data
-            export_data = {
-                'drivers': st.session_state.drivers,
-                'cars': st.session_state.cars
-            }
-            st.download_button(
-                label="📥 Download JSON",
-                data=json.dumps(export_data, indent=2),
-                file_name="taxi_manager_data.json",
-                mime="application/json"
-            )
-    
-    with col2:
-        if st.button("🗑️ Clear All Data"):
-            st.warning("This will delete ALL data!")
-            if st.button("⚠️ Confirm Clear All"):
-                st.session_state.drivers = []
-                st.session_state.cars = []
-                st.session_state.rides = []
-                st.success("All data cleared!")
-                st.rerun()
+    st.write("App settings here")
