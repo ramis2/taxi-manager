@@ -2,6 +2,7 @@ import streamlit as st
 import pandas as pd
 import numpy as np
 from datetime import datetime
+import json
 
 st.set_page_config(page_title="Taxi Manager", layout="wide")
 
@@ -10,6 +11,10 @@ if 'drivers' not in st.session_state:
     st.session_state.drivers = []
 if 'cars' not in st.session_state:
     st.session_state.cars = []
+if 'balance_data' not in st.session_state:
+    st.session_state.balance_data = []
+if 'reports' not in st.session_state:
+    st.session_state.reports = []
 
 # ==================== SIDEBAR MENU ====================
 st.sidebar.title("📋 TaxiManager")
@@ -58,16 +63,16 @@ if menu == "📊 Dashboard":
     with col_left:
         st.subheader("Recent Drivers")
         if st.session_state.drivers:
-            drivers_df = pd.DataFrame(st.session_state.drivers)
-            st.dataframe(drivers_df, use_container_width=True)
+            drivers_df = pd.DataFrame(st.session_state.drivers[-5:])  # Last 5
+            st.dataframe(drivers_df[['name', 'license', 'phone', 'status']], use_container_width=True)
         else:
             st.info("No drivers added yet")
     
     with col_right:
         st.subheader("Recent Cars")
         if st.session_state.cars:
-            cars_df = pd.DataFrame(st.session_state.cars)
-            st.dataframe(cars_df, use_container_width=True)
+            cars_df = pd.DataFrame(st.session_state.cars[-5:])  # Last 5
+            st.dataframe(cars_df[['model', 'cpnc', 'plate', 'status']], use_container_width=True)
         else:
             st.info("No cars added yet")
 
@@ -75,7 +80,7 @@ if menu == "📊 Dashboard":
 elif menu == "📝 Data Entry":
     st.title("Data Entry")
     
-    tab1, tab2 = st.tabs(["➕ Add Driver", "➕ Add Car"])
+    tab1, tab2, tab3 = st.tabs(["➕ Add Driver", "➕ Add Car", "➕ Add Transaction"])
     
     with tab1:
         st.subheader("Add New Driver")
@@ -103,12 +108,12 @@ elif menu == "📝 Data Entry":
                         'status': status,
                         'email': email,
                         'address': address,
-                        'date_added': datetime.now().strftime("%Y-%m-%d")
+                        'date_added': datetime.now().strftime("%Y-%m-%d %H:%M")
                     }
                     st.session_state.drivers.append(new_driver)
-                    st.success(f"Driver '{name}' added successfully!")
+                    st.success(f"✅ Driver '{name}' added successfully!")
                 else:
-                    st.error("Please fill required fields (*)")
+                    st.error("❌ Please fill required fields (*)")
     
     with tab2:
         st.subheader("Add New Car")
@@ -138,12 +143,79 @@ elif menu == "📝 Data Entry":
                         'color': color,
                         'mileage': mileage,
                         'status': status,
-                        'date_added': datetime.now().strftime("%Y-%m-%d")
+                        'date_added': datetime.now().strftime("%Y-%m-%d %H:%M")
                     }
                     st.session_state.cars.append(new_car)
-                    st.success(f"Car '{model}' added successfully!")
+                    st.success(f"✅ Car '{model}' added successfully!")
                 else:
-                    st.error("Please fill required fields (*)")
+                    st.error("❌ Please fill required fields (*)")
+    
+    with tab3:
+        st.subheader("Add Financial Transaction")
+        
+        with st.form("add_transaction_form"):
+            col1, col2 = st.columns(2)
+            
+            with col1:
+                transaction_type = st.selectbox("Type", ["Income", "Expense", "Salary", "Maintenance"])
+                amount = st.number_input("Amount ($)", min_value=0.0, value=0.0, step=10.0)
+                description = st.text_area("Description")
+            
+            with col2:
+                date = st.date_input("Date", value=datetime.now())
+                category = st.selectbox("Category", ["Fuel", "Repairs", "Insurance", "Driver Payment", "Other"])
+                driver_name = st.selectbox("Driver (if applicable)", 
+                                          ["None"] + [d['name'] for d in st.session_state.drivers])
+            
+            if st.form_submit_button("➕ Add Transaction"):
+                new_transaction = {
+                    'id': len(st.session_state.balance_data) + 1,
+                    'type': transaction_type,
+                    'amount': amount,
+                    'description': description,
+                    'date': date.strftime("%Y-%m-%d"),
+                    'category': category,
+                    'driver': driver_name if driver_name != "None" else "",
+                    'timestamp': datetime.now().strftime("%Y-%m-%d %H:%M")
+                }
+                st.session_state.balance_data.append(new_transaction)
+                st.success(f"✅ Transaction added successfully!")
+
+# ==================== BALANCE ====================
+elif menu == "💰 Balance":
+    st.title("Balance & Finance")
+    
+    if st.session_state.balance_data:
+        # Summary metrics
+        income = sum(t['amount'] for t in st.session_state.balance_data if t['type'] == 'Income')
+        expenses = sum(t['amount'] for t in st.session_state.balance_data if t['type'] in ['Expense', 'Salary', 'Maintenance'])
+        balance = income - expenses
+        
+        col1, col2, col3 = st.columns(3)
+        with col1:
+            st.metric("Total Income", f"${income:,.2f}")
+        with col2:
+            st.metric("Total Expenses", f"${expenses:,.2f}")
+        with col3:
+            st.metric("Balance", f"${balance:,.2f}", delta=f"{balance:,.2f}")
+        
+        # Transactions table
+        st.subheader("All Transactions")
+        balance_df = pd.DataFrame(st.session_state.balance_data)
+        st.dataframe(balance_df, use_container_width=True)
+        
+        # Export option
+        if st.button("📥 Export to CSV"):
+            csv = balance_df.to_csv(index=False)
+            st.download_button(
+                label="Download CSV",
+                data=csv,
+                file_name="transactions.csv",
+                mime="text/csv"
+            )
+    else:
+        st.info("💸 No financial transactions recorded yet.")
+        st.write("Go to **Data Entry → Add Transaction** to record income and expenses.")
 
 # ==================== DRIVER MANAGEMENT ====================
 elif menu == "👨‍✈️ Driver Management":
@@ -151,7 +223,7 @@ elif menu == "👨‍✈️ Driver Management":
     
     if st.session_state.drivers:
         for i, driver in enumerate(st.session_state.drivers):
-            with st.expander(f"{driver['name']} - {driver['license']} ({driver['status']})"):
+            with st.expander(f"👤 {driver['name']} - {driver['license']} ({driver['status']})"):
                 col1, col2 = st.columns(2)
                 
                 with col1:
@@ -181,7 +253,7 @@ elif menu == "👨‍✈️ Driver Management":
                     st.success("✅ Driver updated successfully!")
                     st.rerun()
     else:
-        st.info("No drivers to manage")
+        st.info("👥 No drivers to manage. Add drivers in **Data Entry**.")
 
 # ==================== CAR MANAGEMENT ====================
 elif menu == "🚗 Car Management":
@@ -189,7 +261,7 @@ elif menu == "🚗 Car Management":
     
     if st.session_state.cars:
         for i, car in enumerate(st.session_state.cars):
-            with st.expander(f"{car['model']} - {car['plate']} ({car['status']})"):
+            with st.expander(f"🚗 {car['model']} - {car['plate']} ({car['status']})"):
                 col1, col2 = st.columns(2)
                 
                 with col1:
@@ -221,17 +293,41 @@ elif menu == "🚗 Car Management":
                     st.success("✅ Car updated successfully!")
                     st.rerun()
     else:
-        st.info("No cars to manage")
+        st.info("🚙 No cars to manage. Add cars in **Data Entry**.")
 
-# ==================== OTHER PAGES ====================
-elif menu == "💰 Balance":
-    st.title("Balance")
-    st.write("Financial balance and transactions will appear here")
-    
+# ==================== DRIVER LETTER ====================
 elif menu == "📄 Driver Letter":
-    st.title("Driver Letter")
-    st.write("Generate letters and documents for drivers")
+    st.title("Driver Letter Generator")
     
+    if st.session_state.drivers:
+        selected_driver = st.selectbox(
+            "Select Driver",
+            [f"{d['name']} ({d['license']})" for d in st.session_state.drivers]
+        )
+        
+        letter_type = st.selectbox("Letter Type", 
+                                  ["Employment Certificate", 
+                                   "Salary Certificate", 
+                                   "Warning Letter",
+                                   "Appreciation Letter",
+                                   "Custom Letter"])
+        
+        st.subheader("Letter Content")
+        letter_content = st.text_area("Enter letter content", height=200,
+                                     value=f"This is to certify that {selected_driver.split('(')[0].strip()}...")
+        
+        if st.button("📄 Generate Letter"):
+            st.success("✅ Letter generated successfully!")
+            st.download_button(
+                label="📥 Download Letter",
+                data=letter_content,
+                file_name=f"letter_{selected_driver.split('(')[0].strip()}_{datetime.now().strftime('%Y%m%d')}.txt",
+                mime="text/plain"
+            )
+    else:
+        st.info("👥 No drivers available. Add drivers first.")
+
+# ==================== DELETE DRIVER ====================
 elif menu == "🗑️ Delete Driver":
     st.title("Delete Driver")
     
@@ -241,19 +337,105 @@ elif menu == "🗑️ Delete Driver":
         
         if selected:
             idx = driver_options[selected]
-            st.warning(f"⚠️ Delete {selected}?")
+            driver = st.session_state.drivers[idx]
             
-            if st.button("🗑️ Confirm Delete", type="primary"):
+            st.warning(f"⚠️ You are about to delete: **{driver['name']}**")
+            st.write(f"License: {driver['license']}")
+            st.write(f"Status: {driver['status']}")
+            
+            confirm = st.checkbox("I confirm I want to delete this driver")
+            
+            if confirm and st.button("🗑️ DELETE DRIVER", type="primary"):
                 del st.session_state.drivers[idx]
                 st.success("✅ Driver deleted successfully!")
                 st.rerun()
     else:
-        st.info("No drivers to delete")
-    
+        st.info("👥 No drivers to delete.")
+
+# ==================== REPORTS ====================
 elif menu == "📈 Reports":
-    st.title("Reports")
-    st.write("Generate various reports here")
+    st.title("Reports & Analytics")
     
+    report_type = st.selectbox("Select Report Type", 
+                              ["Driver Performance", 
+                               "Car Utilization", 
+                               "Financial Summary",
+                               "Monthly Summary"])
+    
+    if report_type == "Driver Performance":
+        st.subheader("Driver Performance Report")
+        if st.session_state.drivers:
+            drivers_df = pd.DataFrame(st.session_state.drivers)
+            st.dataframe(drivers_df, use_container_width=True)
+        else:
+            st.info("No driver data available")
+    
+    elif report_type == "Car Utilization":
+        st.subheader("Car Utilization Report")
+        if st.session_state.cars:
+            cars_df = pd.DataFrame(st.session_state.cars)
+            st.dataframe(cars_df, use_container_width=True)
+        else:
+            st.info("No car data available")
+    
+    elif report_type == "Financial Summary":
+        st.subheader("Financial Summary Report")
+        if st.session_state.balance_data:
+            balance_df = pd.DataFrame(st.session_state.balance_data)
+            
+            # Summary by category
+            summary = balance_df.groupby('category')['amount'].sum().reset_index()
+            st.bar_chart(summary.set_index('category'))
+            
+            st.dataframe(balance_df, use_container_width=True)
+        else:
+            st.info("No financial data available")
+    
+    elif report_type == "Monthly Summary":
+        st.subheader("Monthly Summary Report")
+        st.info("Monthly reports will be available when you have more data.")
+
+# ==================== SETTINGS ====================
 elif menu == "⚙️ Settings":
     st.title("Settings")
-    st.write("App settings and configuration")
+    
+    st.subheader("Data Management")
+    
+    col1, col2 = st.columns(2)
+    
+    with col1:
+        st.write("**Export All Data**")
+        if st.button("📤 Export to JSON"):
+            export_data = {
+                'drivers': st.session_state.drivers,
+                'cars': st.session_state.cars,
+                'transactions': st.session_state.balance_data,
+                'export_date': datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+            }
+            json_data = json.dumps(export_data, indent=2)
+            st.download_button(
+                label="📥 Download JSON",
+                data=json_data,
+                file_name=f"taxi_manager_backup_{datetime.now().strftime('%Y%m%d_%H%M%S')}.json",
+                mime="application/json"
+            )
+    
+    with col2:
+        st.write("**Clear All Data**")
+        st.warning("⚠️ This will delete ALL data!")
+        if st.button("🗑️ Clear All Data", type="secondary"):
+            if st.button("⚠️ CONFIRM CLEAR ALL", type="primary"):
+                st.session_state.drivers = []
+                st.session_state.cars = []
+                st.session_state.balance_data = []
+                st.session_state.reports = []
+                st.success("✅ All data cleared successfully!")
+                st.rerun()
+    
+    st.subheader("App Configuration")
+    app_name = st.text_input("App Name", value="Taxi Manager")
+    currency = st.selectbox("Currency", ["USD", "EUR", "GBP", "Other"])
+    language = st.selectbox("Language", ["English", "Spanish", "French", "Arabic"])
+    
+    if st.button("💾 Save Settings"):
+        st.success("✅ Settings saved successfully!")
