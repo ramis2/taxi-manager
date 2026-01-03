@@ -1,602 +1,547 @@
-# ==================== IMPORTS ====================
+# app.py - Complete Taxi Manager Streamlit App
 import streamlit as st
 import pandas as pd
-import numpy as np
-from datetime import datetime
+import sqlite3
 import json
-import os
+from datetime import datetime
+import io
 
-# ==================== DATA PERSISTENCE FUNCTIONS ====================
-def load_data():
-    """Load data from CSV files if they exist"""
-    try:
-        # Load drivers
-        if os.path.exists('drivers.csv'):
-            drivers_df = pd.read_csv('drivers.csv')
-            # Convert NaN to empty string
-            drivers_df = drivers_df.fillna('')
-            st.session_state.drivers = drivers_df.to_dict('records')
-        else:
-            st.session_state.drivers = []
-        
-        # Load cars
-        if os.path.exists('cars.csv'):
-            cars_df = pd.read_csv('cars.csv')
-            cars_df = cars_df.fillna('')
-            st.session_state.cars = cars_df.to_dict('records')
-        else:
-            st.session_state.cars = []
-        
-        # Load transactions
-        if os.path.exists('transactions.csv'):
-            transactions_df = pd.read_csv('transactions.csv')
-            transactions_df = transactions_df.fillna('')
-            st.session_state.balance_data = transactions_df.to_dict('records')
-        else:
-            st.session_state.balance_data = []
-            
-    except Exception as e:
-        st.error(f"Error loading data: {e}")
-        st.session_state.drivers = []
-        st.session_state.cars = []
-        st.session_state.balance_data = []
+# Set page configuration
+st.set_page_config(
+    page_title="Taxi Manager Pro",
+    page_icon="🚕",
+    layout="wide"
+)
 
-def save_data():
-    """Save all data to CSV files"""
-    try:
-        # Save drivers
-        if 'drivers' in st.session_state and st.session_state.drivers:
-            drivers_df = pd.DataFrame(st.session_state.drivers)
-            drivers_df.to_csv('drivers.csv', index=False)
-        
-        # Save cars
-        if 'cars' in st.session_state and st.session_state.cars:
-            cars_df = pd.DataFrame(st.session_state.cars)
-            cars_df.to_csv('cars.csv', index=False)
-        
-        # Save transactions
-        if 'balance_data' in st.session_state and st.session_state.balance_data:
-            transactions_df = pd.DataFrame(st.session_state.balance_data)
-            transactions_df.to_csv('transactions.csv', index=False)
-            
-        return True
-    except Exception as e:
-        st.error(f"Error saving data: {e}")
-        return False
+# Initialize database
+def init_db():
+    conn = sqlite3.connect('taxi_manager.db')
+    c = conn.cursor()
+    
+    # Drivers table
+    c.execute('''
+        CREATE TABLE IF NOT EXISTS drivers (
+            id TEXT PRIMARY KEY,
+            name TEXT NOT NULL,
+            phone TEXT,
+            vehicle_number TEXT,
+            license_number TEXT,
+            join_date TEXT,
+            status TEXT DEFAULT 'Active',
+            total_trips INTEGER DEFAULT 0,
+            total_earnings REAL DEFAULT 0
+        )
+    ''')
+    
+    # Settings table
+    c.execute('''
+        CREATE TABLE IF NOT EXISTS settings (
+            key TEXT PRIMARY KEY,
+            value TEXT
+        )
+    ''')
+    
+    # Default settings
+    default_settings = [
+        ('company_name', 'Taxi Manager Pro'),
+        ('fare_per_km', '50'),
+        ('currency', '₹'),
+        ('report_email', 'admin@taximanager.com')
+    ]
+    
+    c.executemany('''
+        INSERT OR IGNORE INTO settings (key, value) VALUES (?, ?)
+    ''', default_settings)
+    
+    conn.commit()
+    conn.close()
 
-# ==================== INITIALIZE APP ====================
-st.set_page_config(page_title="Taxi Manager", layout="wide")
+# Initialize session state
+if 'page' not in st.session_state:
+    st.session_state.page = 'dashboard'
+if 'edit_driver_id' not in st.session_state:
+    st.session_state.edit_driver_id = None
+if 'delete_confirm' not in st.session_state:
+    st.session_state.delete_confirm = None
 
-# Load existing data on app start
-if 'data_loaded' not in st.session_state:
-    load_data()
-    st.session_state.data_loaded = True
+# Initialize database
+init_db()
 
-# Initialize empty lists if they don't exist
-if 'drivers' not in st.session_state:
-    st.session_state.drivers = []
-if 'cars' not in st.session_state:
-    st.session_state.cars = []
-if 'balance_data' not in st.session_state:
-    st.session_state.balance_data = []
-if 'reports' not in st.session_state:
-    st.session_state.reports = []
+# Database helper functions
+def get_db_connection():
+    return sqlite3.connect('taxi_manager.db')
 
-# ==================== SIDEBAR MENU ====================
-st.sidebar.title("📋 TaxiManager")
+def get_drivers():
+    conn = get_db_connection()
+    df = pd.read_sql('SELECT * FROM drivers ORDER BY name', conn)
+    conn.close()
+    return df
+
+def get_driver_by_id(driver_id):
+    conn = get_db_connection()
+    c = conn.cursor()
+    c.execute('SELECT * FROM drivers WHERE id = ?', (driver_id,))
+    driver = c.fetchone()
+    conn.close()
+    return driver
+
+def add_driver(driver_data):
+    conn = get_db_connection()
+    c = conn.cursor()
+    c.execute('''
+        INSERT INTO drivers (id, name, phone, vehicle_number, license_number, join_date)
+        VALUES (?, ?, ?, ?, ?, ?)
+    ''', driver_data)
+    conn.commit()
+    conn.close()
+
+def update_driver(driver_id, update_data):
+    conn = get_db_connection()
+    c = conn.cursor()
+    c.execute('''
+        UPDATE drivers 
+        SET name=?, phone=?, vehicle_number=?, license_number=?
+        WHERE id=?
+    ''', (*update_data, driver_id))
+    conn.commit()
+    conn.close()
+
+def delete_driver(driver_id):
+    conn = get_db_connection()
+    c = conn.cursor()
+    c.execute('DELETE FROM drivers WHERE id = ?', (driver_id,))
+    conn.commit()
+    conn.close()
+
+def get_settings():
+    conn = get_db_connection()
+    c = conn.cursor()
+    c.execute('SELECT key, value FROM settings')
+    settings = dict(c.fetchall())
+    conn.close()
+    return settings
+
+def update_settings(settings_dict):
+    conn = get_db_connection()
+    c = conn.cursor()
+    for key, value in settings_dict.items():
+        c.execute('''
+            INSERT OR REPLACE INTO settings (key, value) VALUES (?, ?)
+        ''', (key, value))
+    conn.commit()
+    conn.close()
+
+# Sidebar Navigation
+st.sidebar.title("🚕 Taxi Manager")
+st.sidebar.divider()
 
 menu = st.sidebar.radio(
     "Navigation",
-    [
-        "📊 Dashboard",
-        "📝 Data Entry", 
-        "💰 Balance",
-        "👨‍✈️ Driver Management",
-        "🚗 Car Management",
-        "📄 Driver Letter",
-        "🗑️ Delete Driver",
-        "📈 Reports",
-        "⚙️ Settings"
-    ]
+    ["📊 Dashboard", "👨‍✈️ Drivers", "📝 Reports", "⚙️ Settings"]
 )
 
-# ==================== DASHBOARD ====================
+# Dashboard Page
 if menu == "📊 Dashboard":
-    st.title("Dashboard")
+    st.title("📊 Dashboard")
     
-    # Metrics Row
+    # Get drivers data
+    drivers_df = get_drivers()
+    
+    # Key Metrics
     col1, col2, col3, col4 = st.columns(4)
     
     with col1:
-        st.metric("Total Drivers", len(st.session_state.drivers))
+        st.metric(
+            label="Total Drivers",
+            value=len(drivers_df),
+            delta=f"+{len(drivers_df[drivers_df['status'] == 'Active'])} Active"
+        )
     
     with col2:
-        st.metric("Total Cars", len(st.session_state.cars))
+        total_trips = drivers_df['total_trips'].sum() if not drivers_df.empty else 0
+        st.metric(
+            label="Total Trips",
+            value=total_trips,
+            delta="This Month"
+        )
     
     with col3:
-        active_drivers = len([d for d in st.session_state.drivers if str(d.get('status', '')).lower() == 'active'])
-        st.metric("Active Drivers", active_drivers)
+        total_earnings = drivers_df['total_earnings'].sum() if not drivers_df.empty else 0
+        st.metric(
+            label="Total Earnings",
+            value=f"₹{total_earnings:,.2f}",
+            delta="+12.5%"
+        )
     
     with col4:
-        available_cars = len([c for c in st.session_state.cars if str(c.get('status', '')).lower() == 'available'])
-        st.metric("Available Cars", available_cars)
+        inactive = len(drivers_df[drivers_df['status'] == 'Inactive']) if not drivers_df.empty else 0
+        st.metric(
+            label="Inactive Drivers",
+            value=inactive,
+            delta_color="inverse"
+        )
     
     st.divider()
     
-    # Recent Data Tables
-    col_left, col_right = st.columns(2)
+    # Recent Drivers Table
+    st.subheader("👨‍✈️ Recent Drivers")
+    if not drivers_df.empty:
+        # Display only key columns
+        display_df = drivers_df[['id', 'name', 'phone', 'vehicle_number', 'status', 'total_trips']]
+        display_df = display_df.rename(columns={
+            'id': 'ID',
+            'name': 'Name',
+            'phone': 'Phone',
+            'vehicle_number': 'Vehicle',
+            'status': 'Status',
+            'total_trips': 'Trips'
+        })
+        st.dataframe(display_df, use_container_width=True)
+    else:
+        st.info("No drivers found. Add your first driver!")
     
-    with col_left:
-        st.subheader("Recent Drivers")
-        if st.session_state.drivers:
-            drivers_df = pd.DataFrame(st.session_state.drivers[-5:])  # Last 5
-            display_cols = ['name', 'license', 'phone', 'status']
-            available_cols = [col for col in display_cols if col in drivers_df.columns]
-            if available_cols:
-                st.dataframe(drivers_df[available_cols], use_container_width=True)
-            else:
-                st.dataframe(drivers_df, use_container_width=True)
-        else:
-            st.info("No drivers added yet")
+    # Quick Actions
+    st.subheader("⚡ Quick Actions")
+    qcol1, qcol2, qcol3 = st.columns(3)
     
-    with col_right:
-        st.subheader("Recent Cars")
-        if st.session_state.cars:
-            cars_df = pd.DataFrame(st.session_state.cars[-5:])  # Last 5
-            display_cols = ['model', 'cpnc', 'plate', 'status']
-            available_cols = [col for col in display_cols if col in cars_df.columns]
-            if available_cols:
-                st.dataframe(cars_df[available_cols], use_container_width=True)
-            else:
-                st.dataframe(cars_df, use_container_width=True)
-        else:
-            st.info("No cars added yet")
+    with qcol1:
+        if st.button("🔄 Refresh Data", use_container_width=True):
+            st.rerun()
+    
+    with qcol2:
+        if st.button("📊 View Full Report", use_container_width=True):
+            st.session_state.page = 'reports'
+            st.rerun()
+    
+    with qcol3:
+        if st.button("➕ Add New Driver", use_container_width=True):
+            st.session_state.page = 'drivers'
+            st.session_state.edit_driver_id = 'new'
+            st.rerun()
 
-# ==================== DATA ENTRY ====================
-elif menu == "📝 Data Entry":
-    st.title("Data Entry")
+# Drivers Management Page
+elif menu == "👨‍✈️ Drivers":
+    st.title("👨‍✈️ Driver Management")
     
-    tab1, tab2, tab3 = st.tabs(["➕ Add Driver", "➕ Add Car", "➕ Add Transaction"])
+    # Action buttons at top
+    col1, col2 = st.columns([3, 1])
     
-    with tab1:
-        st.subheader("Add New Driver")
+    with col1:
+        search_term = st.text_input("🔍 Search drivers by name or ID", placeholder="Enter name or ID...")
+    
+    with col2:
+        if st.button("➕ Add New Driver", type="primary", use_container_width=True):
+            st.session_state.edit_driver_id = 'new'
+            st.rerun()
+    
+    st.divider()
+    
+    # Get and filter drivers
+    drivers_df = get_drivers()
+    
+    if search_term:
+        mask = drivers_df['name'].str.contains(search_term, case=False) | drivers_df['id'].str.contains(search_term, case=False)
+        drivers_df = drivers_df[mask]
+    
+    # Display drivers table with actions
+    if not drivers_df.empty:
+        for _, driver in drivers_df.iterrows():
+            with st.container():
+                cols = st.columns([1, 2, 2, 2, 2, 3])
+                
+                with cols[0]:
+                    st.write(f"**{driver['id']}**")
+                
+                with cols[1]:
+                    st.write(driver['name'])
+                
+                with cols[2]:
+                    st.write(driver['phone'])
+                
+                with cols[3]:
+                    st.write(driver['vehicle_number'])
+                
+                with cols[4]:
+                    status_color = "🟢" if driver['status'] == 'Active' else "🔴"
+                    st.write(f"{status_color} {driver['status']}")
+                
+                with cols[5]:
+                    col_btn1, col_btn2 = st.columns(2)
+                    with col_btn1:
+                        if st.button("✏️ Edit", key=f"edit_{driver['id']}", use_container_width=True):
+                            st.session_state.edit_driver_id = driver['id']
+                            st.rerun()
+                    with col_btn2:
+                        if st.button("🗑️ Delete", key=f"del_{driver['id']}", use_container_width=True):
+                            st.session_state.delete_confirm = driver['id']
+                            st.rerun()
+                
+                st.divider()
+    else:
+        st.info("No drivers found. Add your first driver!")
+    
+    # Add/Edit Driver Form (shown when edit_driver_id is set)
+    if st.session_state.edit_driver_id:
+        st.subheader("➕ Add New Driver" if st.session_state.edit_driver_id == 'new' else "✏️ Edit Driver")
         
-        with st.form("add_driver_form"):
+        with st.form(key="driver_form"):
+            if st.session_state.edit_driver_id == 'new':
+                driver_id = st.text_input("Driver ID*", placeholder="DRV001")
+            else:
+                driver_data = get_driver_by_id(st.session_state.edit_driver_id)
+                driver_id = st.text_input("Driver ID*", value=driver_data[0], disabled=True)
+                name = st.text_input("Full Name*", value=driver_data[1])
+                phone = st.text_input("Phone Number*", value=driver_data[2])
+                vehicle = st.text_input("Vehicle Number*", value=driver_data[3])
+                license = st.text_input("License Number", value=driver_data[4])
+            else:
+                driver_id = st.text_input("Driver ID*", placeholder="DRV001")
+                name = st.text_input("Full Name*", placeholder="John Doe")
+                phone = st.text_input("Phone Number*", placeholder="+91 9876543210")
+                vehicle = st.text_input("Vehicle Number*", placeholder="MH01AB1234")
+                license = st.text_input("License Number", placeholder="DL123456789")
+            
             col1, col2 = st.columns(2)
-            
             with col1:
-                name = st.text_input("Driver Name *")
-                license_num = st.text_input("License Number *")
-                phone = st.text_input("Phone Number")
-            
+                submit = st.form_submit_button("💾 Save Driver", type="primary", use_container_width=True)
             with col2:
-                status = st.selectbox("Status", ["Active", "Inactive", "On Leave"])
-                email = st.text_input("Email")
-                address = st.text_input("Address")
+                cancel = st.form_submit_button("❌ Cancel", use_container_width=True)
             
-            submitted = st.form_submit_button("➕ Add Driver")
-            
-            if submitted:
-                if name and license_num:
-                    new_driver = {
-                        'id': len(st.session_state.drivers) + 1,
-                        'name': name,
-                        'license': license_num,
-                        'phone': phone,
-                        'status': status,
-                        'email': email,
-                        'address': address,
-                        'date_added': datetime.now().strftime("%Y-%m-%d %H:%M")
-                    }
-                    st.session_state.drivers.append(new_driver)
-                    save_data()  # Save to CSV
-                    st.success(f"✅ Driver '{name}' added successfully!")
-                    st.rerun()
+            if submit:
+                if not all([driver_id, name, phone, vehicle]):
+                    st.error("Please fill all required fields (*)")
                 else:
-                    st.error("❌ Please fill required fields (*)")
-    
-    with tab2:
-        st.subheader("Add New Car")
-        
-        with st.form("add_car_form"):
-            col1, col2 = st.columns(2)
+                    try:
+                        if st.session_state.edit_driver_id == 'new':
+                            add_driver((driver_id, name, phone, vehicle, license, datetime.now().strftime("%Y-%m-%d")))
+                            st.success(f"Driver {name} added successfully!")
+                        else:
+                            update_driver(driver_id, (name, phone, vehicle, license))
+                            st.success(f"Driver {name} updated successfully!")
+                        
+                        st.session_state.edit_driver_id = None
+                        st.rerun()
+                    except Exception as e:
+                        st.error(f"Error: {str(e)}")
             
-            with col1:
-                model = st.text_input("Car Model *", placeholder="Ford Fusion")
-                year = st.number_input("Year *", min_value=2000, max_value=2026, value=2024)
-                cpnc = st.text_input("CPNC Number *", placeholder="CPNC2001")
-            
-            with col2:
-                plate = st.text_input("License Plate *", placeholder="DEF-456")
-                color = st.text_input("Color")
-                mileage = st.number_input("Mileage (km)", min_value=0, value=0)
-                status = st.selectbox("Status", ["Available", "In Service", "Maintenance"])
-            
-            submitted = st.form_submit_button("➕ Add Car")
-            
-            if submitted:
-                if model and cpnc and plate:
-                    new_car = {
-                        'id': len(st.session_state.cars) + 1,
-                        'model': model,
-                        'year': int(year),
-                        'cpnc': cpnc,
-                        'plate': plate,
-                        'color': color,
-                        'mileage': int(mileage),
-                        'status': status,
-                        'date_added': datetime.now().strftime("%Y-%m-%d %H:%M")
-                    }
-                    st.session_state.cars.append(new_car)
-                    save_data()  # Save to CSV
-                    st.success(f"✅ Car '{model}' added successfully!")
-                    st.rerun()
-                else:
-                    st.error("❌ Please fill required fields (*)")
-    
-    with tab3:
-        st.subheader("Add Financial Transaction")
-        
-        with st.form("add_transaction_form"):
-            col1, col2 = st.columns(2)
-            
-            with col1:
-                transaction_type = st.selectbox("Type", ["Income", "Expense", "Salary", "Maintenance"])
-                amount = st.number_input("Amount ($)", min_value=0.0, value=0.0, step=10.0)
-                description = st.text_area("Description")
-            
-            with col2:
-                date = st.date_input("Date", value=datetime.now())
-                category = st.selectbox("Category", ["Fuel", "Repairs", "Insurance", "Driver Payment", "Other"])
-                driver_options = ["None"] + [d['name'] for d in st.session_state.drivers]
-                driver_name = st.selectbox("Driver (if applicable)", driver_options)
-            
-            submitted = st.form_submit_button("➕ Add Transaction")
-            
-            if submitted:
-                new_transaction = {
-                    'id': len(st.session_state.balance_data) + 1,
-                    'type': transaction_type,
-                    'amount': float(amount),
-                    'description': description,
-                    'date': date.strftime("%Y-%m-%d"),
-                    'category': category,
-                    'driver': driver_name if driver_name != "None" else "",
-                    'timestamp': datetime.now().strftime("%Y-%m-%d %H:%M")
-                }
-                st.session_state.balance_data.append(new_transaction)
-                save_data()  # Save to CSV
-                st.success(f"✅ Transaction added successfully!")
+            if cancel:
+                st.session_state.edit_driver_id = None
                 st.rerun()
-
-# ==================== BALANCE ====================
-elif menu == "💰 Balance":
-    st.title("Balance & Finance")
     
-    if st.session_state.balance_data:
-        # Summary metrics
-        income = sum(t['amount'] for t in st.session_state.balance_data if t['type'] == 'Income')
-        expenses = sum(t['amount'] for t in st.session_state.balance_data if t['type'] in ['Expense', 'Salary', 'Maintenance'])
-        balance = income - expenses
+    # Delete Confirmation Dialog
+    if st.session_state.delete_confirm:
+        st.warning("⚠️ Confirm Deletion")
+        driver_data = get_driver_by_id(st.session_state.delete_confirm)
         
-        col1, col2, col3 = st.columns(3)
+        col1, col2, col3 = st.columns([2, 1, 1])
         with col1:
-            st.metric("Total Income", f"${income:,.2f}")
+            st.write(f"Delete driver **{driver_data[1]}** (ID: {driver_data[0]})?")
         with col2:
-            st.metric("Total Expenses", f"${expenses:,.2f}")
+            if st.button("✅ Yes, Delete", type="primary", use_container_width=True):
+                delete_driver(st.session_state.delete_confirm)
+                st.success("Driver deleted successfully!")
+                st.session_state.delete_confirm = None
+                st.rerun()
         with col3:
-            st.metric("Balance", f"${balance:,.2f}", delta=f"{balance:,.2f}")
-        
-        # Transactions table
-        st.subheader("All Transactions")
-        balance_df = pd.DataFrame(st.session_state.balance_data)
-        st.dataframe(balance_df, use_container_width=True)
-        
-        # Export option
-        if st.button("📥 Export to CSV"):
-            csv = balance_df.to_csv(index=False)
-            st.download_button(
-                label="Download CSV",
-                data=csv,
-                file_name="transactions.csv",
-                mime="text/csv"
-            )
-    else:
-        st.info("💸 No financial transactions recorded yet.")
-        st.write("Go to **Data Entry → Add Transaction** to record income and expenses.")
-
-# ==================== DRIVER MANAGEMENT ====================
-elif menu == "👨‍✈️ Driver Management":
-    st.title("Driver Management")
-    
-    if st.session_state.drivers:
-        for i, driver in enumerate(st.session_state.drivers):
-            with st.expander(f"👤 {driver['name']} - {driver['license']} ({driver['status']})"):
-                col1, col2 = st.columns(2)
-                
-                with col1:
-                    new_name = st.text_input("Name", value=driver.get('name', ''), key=f"dr_name_{i}")
-                    new_license = st.text_input("License", value=driver.get('license', ''), key=f"dr_license_{i}")
-                    new_phone = st.text_input("Phone", value=driver.get('phone', ''), key=f"dr_phone_{i}")
-                
-                with col2:
-                    current_status = driver.get('status', 'Active')
-                    status_options = ["Active", "Inactive", "On Leave"]
-                    status_index = status_options.index(current_status) if current_status in status_options else 0
-                    new_status = st.selectbox(
-                        "Status",
-                        status_options,
-                        index=status_index,
-                        key=f"dr_status_{i}"
-                    )
-                    new_email = st.text_input("Email", value=driver.get('email', ''), key=f"dr_email_{i}")
-                    new_address = st.text_input("Address", value=driver.get('address', ''), key=f"dr_address_{i}")
-                
-                col_save, col_delete = st.columns(2)
-                with col_save:
-                    if st.button("💾 Save Changes", key=f"save_dr_{i}"):
-                        st.session_state.drivers[i].update({
-                            'name': new_name,
-                            'license': new_license,
-                            'phone': new_phone,
-                            'status': new_status,
-                            'email': new_email,
-                            'address': new_address
-                        })
-                        save_data()  # Save to CSV
-                        st.success("✅ Driver updated successfully!")
-                        st.rerun()
-                
-                with col_delete:
-                    if st.button("🗑️ Delete", key=f"delete_dr_{i}", type="secondary"):
-                        del st.session_state.drivers[i]
-                        save_data()  # Save to CSV
-                        st.success("✅ Driver deleted!")
-                        st.rerun()
-    else:
-        st.info("👥 No drivers to manage. Add drivers in **Data Entry**.")
-
-# ==================== CAR MANAGEMENT ====================
-elif menu == "🚗 Car Management":
-    st.title("Car Management")
-    
-    if st.session_state.cars:
-        for i, car in enumerate(st.session_state.cars):
-            with st.expander(f"🚗 {car['model']} - {car['plate']} ({car['status']})"):
-                col1, col2 = st.columns(2)
-                
-                with col1:
-                    new_model = st.text_input("Model", value=car.get('model', ''), key=f"car_model_{i}")
-                    new_year = st.number_input("Year", value=int(car.get('year', 2024)), key=f"car_year_{i}")
-                    new_cpnc = st.text_input("CPNC", value=car.get('cpnc', ''), key=f"car_cpnc_{i}")
-                
-                with col2:
-                    new_plate = st.text_input("Plate", value=car.get('plate', ''), key=f"car_plate_{i}")
-                    new_color = st.text_input("Color", value=car.get('color', ''), key=f"car_color_{i}")
-                    new_mileage = st.number_input("Mileage", value=int(car.get('mileage', 0)), key=f"car_mileage_{i}")
-                    
-                    current_status = car.get('status', 'Available')
-                    status_options = ["Available", "In Service", "Maintenance"]
-                    status_index = status_options.index(current_status) if current_status in status_options else 0
-                    new_status = st.selectbox(
-                        "Status",
-                        status_options,
-                        index=status_index,
-                        key=f"car_status_{i}"
-                    )
-                
-                col_save, col_delete = st.columns(2)
-                with col_save:
-                    if st.button("💾 Save Changes", key=f"save_car_{i}"):
-                        st.session_state.cars[i].update({
-                            'model': new_model,
-                            'year': int(new_year),
-                            'cpnc': new_cpnc,
-                            'plate': new_plate,
-                            'color': new_color,
-                            'mileage': int(new_mileage),
-                            'status': new_status
-                        })
-                        save_data()  # Save to CSV
-                        st.success("✅ Car updated successfully!")
-                        st.rerun()
-                
-                with col_delete:
-                    if st.button("🗑️ Delete", key=f"delete_car_{i}", type="secondary"):
-                        del st.session_state.cars[i]
-                        save_data()  # Save to CSV
-                        st.success("✅ Car deleted!")
-                        st.rerun()
-    else:
-        st.info("🚙 No cars to manage. Add cars in **Data Entry**.")
-
-# ==================== DRIVER LETTER ====================
-elif menu == "📄 Driver Letter":
-    st.title("Driver Letter Generator")
-    
-    if st.session_state.drivers:
-        # Create driver selection options
-        driver_options = [f"{d.get('name', '')} ({d.get('license', '')})" for d in st.session_state.drivers]
-        selected_driver = st.selectbox("Select Driver", driver_options)
-        
-        letter_type = st.selectbox("Letter Type", 
-                                  ["Employment Certificate", 
-                                   "Salary Certificate", 
-                                   "Warning Letter",
-                                   "Appreciation Letter",
-                                   "Custom Letter"])
-        
-        st.subheader("Letter Content")
-        
-        # Default letter content based on type
-        default_content = ""
-        if letter_type == "Employment Certificate":
-            default_content = f"This is to certify that {selected_driver.split('(')[0].strip()} is employed as a driver with our company.\n\n"
-            default_content += f"License Number: {selected_driver.split('(')[1].replace(')', '')}\n"
-            default_content += "Position: Professional Driver\n"
-            default_content += f"Date: {datetime.now().strftime('%B %d, %Y')}\n\n"
-            default_content += "Sincerely,\nTaxi Manager"
-        
-        elif letter_type == "Salary Certificate":
-            default_content = f"SALARY CERTIFICATE\n\n"
-            default_content += f"This certifies that {selected_driver.split('(')[0].strip()} has been receiving a monthly salary of $XXXX.\n\n"
-            default_content += "For any queries, please contact our office.\n\n"
-            default_content += f"Date: {datetime.now().strftime('%B %d, %Y')}"
-        
-        letter_content = st.text_area("Enter letter content", 
-                                     value=default_content,
-                                     height=250)
-        
-        col1, col2 = st.columns(2)
-        
-        with col1:
-            if st.button("📄 Preview Letter"):
-                st.subheader("Letter Preview")
-                st.text(letter_content)
-        
-        with col2:
-            if st.button("📥 Generate & Download Letter"):
-                driver_name_clean = selected_driver.split('(')[0].strip().replace(" ", "_")
-                file_name = f"{driver_name_clean}_{letter_type.replace(' ', '_')}_{datetime.now().strftime('%Y%m%d')}.txt"
-                
-                st.success(f"✅ Letter generated successfully!")
-                st.download_button(
-                    label="📥 Download Letter",
-                    data=letter_content,
-                    file_name=file_name,
-                    mime="text/plain"
-                )
-    else:
-        st.info("👥 No drivers available. Please add drivers first in the **Data Entry** section.")
-
-# ==================== DELETE DRIVER ====================
-elif menu == "🗑️ Delete Driver":
-    st.title("Delete Driver")
-    
-    if st.session_state.drivers:
-        driver_options = {f"{d.get('name', '')} ({d.get('license', '')})": i for i, d in enumerate(st.session_state.drivers)}
-        selected = st.selectbox("Select driver to delete:", list(driver_options.keys()))
-        
-        if selected:
-            idx = driver_options[selected]
-            driver = st.session_state.drivers[idx]
-            
-            st.warning(f"⚠️ You are about to delete: **{driver.get('name', '')}**")
-            st.write(f"License: {driver.get('license', '')}")
-            st.write(f"Status: {driver.get('status', '')}")
-            
-            confirm = st.checkbox("I confirm I want to delete this driver")
-            
-            if confirm and st.button("🗑️ DELETE DRIVER", type="primary"):
-                del st.session_state.drivers[idx]
-                save_data()  # Save to CSV
-                st.success("✅ Driver deleted successfully!")
+            if st.button("❌ Cancel", use_container_width=True):
+                st.session_state.delete_confirm = None
                 st.rerun()
-    else:
-        st.info("👥 No drivers to delete.")
 
-# ==================== REPORTS ====================
-elif menu == "📈 Reports":
-    st.title("Reports & Analytics")
+# Reports Page
+elif menu == "📝 Reports":
+    st.title("📝 Reports")
     
-    report_type = st.selectbox("Select Report Type", 
-                              ["Driver Performance", 
-                               "Car Utilization", 
-                               "Financial Summary",
-                               "Monthly Summary"])
+    # Report type selection
+    report_type = st.selectbox(
+        "Select Report Type",
+        ["Driver Performance", "Financial Summary", "Vehicle Statistics", "Complete Export"]
+    )
+    
+    # Date range filter
+    col1, col2 = st.columns(2)
+    with col1:
+        start_date = st.date_input("Start Date", value=datetime.now().replace(day=1))
+    with col2:
+        end_date = st.date_input("End Date", value=datetime.now())
+    
+    # Get drivers data
+    drivers_df = get_drivers()
     
     if report_type == "Driver Performance":
-        st.subheader("Driver Performance Report")
-        if st.session_state.drivers:
-            drivers_df = pd.DataFrame(st.session_state.drivers)
-            st.dataframe(drivers_df, use_container_width=True)
+        st.subheader("🚗 Driver Performance Report")
+        
+        if not drivers_df.empty:
+            # Create performance metrics
+            performance_df = drivers_df[['name', 'total_trips', 'total_earnings', 'status']].copy()
+            performance_df['avg_per_trip'] = performance_df['total_earnings'] / performance_df['total_trips'].replace(0, 1)
+            performance_df = performance_df.round(2)
+            
+            # Display metrics
+            col1, col2 = st.columns(2)
+            with col1:
+                st.metric("Total Drivers in Report", len(performance_df))
+                st.metric("Total Trips", performance_df['total_trips'].sum())
+            with col2:
+                st.metric("Total Earnings", f"₹{performance_df['total_earnings'].sum():,.2f}")
+                st.metric("Average per Trip", f"₹{performance_df['avg_per_trip'].mean():,.2f}")
+            
+            # Display table
+            st.dataframe(performance_df, use_container_width=True)
+            
+            # Download button
+            csv = performance_df.to_csv(index=False)
+            st.download_button(
+                label="📥 Download CSV",
+                data=csv,
+                file_name=f"driver_performance_{datetime.now().strftime('%Y%m%d')}.csv",
+                mime="text/csv"
+            )
         else:
-            st.info("No driver data available")
-    
-    elif report_type == "Car Utilization":
-        st.subheader("Car Utilization Report")
-        if st.session_state.cars:
-            cars_df = pd.DataFrame(st.session_state.cars)
-            st.dataframe(cars_df, use_container_width=True)
-        else:
-            st.info("No car data available")
+            st.info("No data available for report")
     
     elif report_type == "Financial Summary":
-        st.subheader("Financial Summary Report")
-        if st.session_state.balance_data:
-            balance_df = pd.DataFrame(st.session_state.balance_data)
+        st.subheader("💰 Financial Summary")
+        
+        if not drivers_df.empty:
+            # Calculate financial metrics
+            total_earnings = drivers_df['total_earnings'].sum()
+            active_drivers = len(drivers_df[drivers_df['status'] == 'Active'])
+            avg_earnings_per_driver = total_earnings / active_drivers if active_drivers > 0 else 0
             
-            # Summary by category
-            if 'category' in balance_df.columns and 'amount' in balance_df.columns:
-                summary = balance_df.groupby('category')['amount'].sum().reset_index()
-                if not summary.empty:
-                    st.bar_chart(summary.set_index('category'))
+            # Display metrics
+            col1, col2, col3 = st.columns(3)
+            with col1:
+                st.metric("Total Earnings", f"₹{total_earnings:,.2f}")
+            with col2:
+                st.metric("Active Drivers", active_drivers)
+            with col3:
+                st.metric("Avg per Driver", f"₹{avg_earnings_per_driver:,.2f}")
             
-            st.dataframe(balance_df, use_container_width=True)
+            # Earnings by driver chart
+            earnings_chart_df = drivers_df[['name', 'total_earnings']].sort_values('total_earnings', ascending=False)
+            st.bar_chart(earnings_chart_df.set_index('name'))
         else:
             st.info("No financial data available")
     
-    elif report_type == "Monthly Summary":
-        st.subheader("Monthly Summary Report")
-        st.info("Monthly reports will be available when you have more data.")
-
-# ==================== SETTINGS ====================
-elif menu == "⚙️ Settings":
-    st.title("Settings")
-    
-    st.subheader("Data Management")
-    
-    col1, col2, col3 = st.columns(3)
-    
-    with col1:
-        st.write("**Save/Load Data**")
-        if st.button("💾 Save All Data Now"):
-            if save_data():
-                st.success("✅ All data saved successfully!")
-            else:
-                st.error("❌ Error saving data")
+    elif report_type == "Complete Export":
+        st.subheader("📤 Complete Data Export")
         
-        if st.button("🔄 Load Saved Data"):
-            load_data()
-            st.success("✅ Data loaded successfully!")
+        if not drivers_df.empty:
+            # Show all data
+            st.dataframe(drivers_df, use_container_width=True)
+            
+            # Export options
+            export_format = st.radio("Export Format", ["CSV", "Excel", "JSON"])
+            
+            if export_format == "CSV":
+                csv = drivers_df.to_csv(index=False)
+                st.download_button(
+                    label="📥 Download CSV",
+                    data=csv,
+                    file_name=f"taxi_drivers_export_{datetime.now().strftime('%Y%m%d')}.csv",
+                    mime="text/csv"
+                )
+            elif export_format == "Excel":
+                output = io.BytesIO()
+                with pd.ExcelWriter(output, engine='openpyxl') as writer:
+                    drivers_df.to_excel(writer, sheet_name='Drivers', index=False)
+                st.download_button(
+                    label="📥 Download Excel",
+                    data=output.getvalue(),
+                    file_name=f"taxi_drivers_export_{datetime.now().strftime('%Y%m%d')}.xlsx",
+                    mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+                )
+            else:  # JSON
+                json_data = drivers_df.to_json(orient='records', indent=2)
+                st.download_button(
+                    label="📥 Download JSON",
+                    data=json_data,
+                    file_name=f"taxi_drivers_export_{datetime.now().strftime('%Y%m%d')}.json",
+                    mime="application/json"
+                )
+        else:
+            st.info("No data to export")
+
+# Settings Page
+elif menu == "⚙️ Settings":
+    st.title("⚙️ Settings")
+    
+    # Get current settings
+    current_settings = get_settings()
+    
+    with st.form("settings_form"):
+        st.subheader("Company Settings")
+        
+        col1, col2 = st.columns(2)
+        with col1:
+            company_name = st.text_input("Company Name", value=current_settings.get('company_name', ''))
+            fare_per_km = st.number_input("Fare per KM (₹)", value=float(current_settings.get('fare_per_km', 50)))
+        
+        with col2:
+            currency = st.text_input("Currency Symbol", value=current_settings.get('currency', '₹'))
+            report_email = st.text_input("Report Email", value=current_settings.get('report_email', ''))
+        
+        st.subheader("Application Settings")
+        auto_backup = st.checkbox("Enable Auto Backup", value=True)
+        backup_interval = st.selectbox("Backup Interval", ["Daily", "Weekly", "Monthly"], index=0)
+        
+        st.divider()
+        
+        col1, col2 = st.columns(2)
+        with col1:
+            save = st.form_submit_button("💾 Save Settings", type="primary", use_container_width=True)
+        with col2:
+            reset = st.form_submit_button("🔄 Reset to Defaults", use_container_width=True)
+        
+        if save:
+            new_settings = {
+                'company_name': company_name,
+                'fare_per_km': str(fare_per_km),
+                'currency': currency,
+                'report_email': report_email,
+                'auto_backup': str(auto_backup),
+                'backup_interval': backup_interval
+            }
+            update_settings(new_settings)
+            st.success("✅ Settings saved successfully!")
+            st.rerun()
+        
+        if reset:
+            update_settings({
+                'company_name': 'Taxi Manager Pro',
+                'fare_per_km': '50',
+                'currency': '₹',
+                'report_email': 'admin@taximanager.com'
+            })
+            st.success("✅ Settings reset to defaults!")
             st.rerun()
     
+    st.divider()
+    
+    # Database Management
+    st.subheader("Database Management")
+    
+    col1, col2 = st.columns(2)
+    with col1:
+        if st.button("📤 Backup Database", use_container_width=True):
+            # Create backup
+            import shutil
+            shutil.copy2('taxi_manager.db', f'taxi_manager_backup_{datetime.now().strftime("%Y%m%d_%H%M%S")}.db')
+            st.success("Database backup created!")
+    
     with col2:
-        st.write("**Export Data**")
-        if st.button("📤 Export to JSON"):
-            export_data = {
-                'drivers': st.session_state.drivers,
-                'cars': st.session_state.cars,
-                'transactions': st.session_state.balance_data,
-                'export_date': datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-            }
-            json_data = json.dumps(export_data, indent=2)
-            st.download_button(
-                label="📥 Download JSON",
-                data=json_data,
-                file_name=f"taxi_manager_backup_{datetime.now().strftime('%Y%m%d_%H%M%S')}.json",
-                mime="application/json"
-            )
-    
-    with col3:
-        st.write("**Clear All Data**")
-        st.warning("⚠️ This will delete ALL data!")
-        if st.button("🗑️ Clear All Data", type="secondary"):
-            if st.button("⚠️ CONFIRM CLEAR ALL", type="primary"):
-                st.session_state.drivers = []
-                st.session_state.cars = []
-                st.session_state.balance_data = []
-                # Also delete CSV files
-                for file in ['drivers.csv', 'cars.csv', 'transactions.csv']:
-                    if os.path.exists(file):
-                        os.remove(file)
-                st.success("✅ All data cleared successfully!")
+        if st.button("🔄 Reset All Data", type="secondary", use_container_width=True):
+            st.warning("⚠️ This will delete all data!")
+            confirm = st.checkbox("I understand this cannot be undone")
+            if confirm and st.button("🚨 Confirm Reset"):
+                conn = get_db_connection()
+                c = conn.cursor()
+                c.execute('DELETE FROM drivers')
+                conn.commit()
+                conn.close()
+                st.error("All data has been reset!")
                 st.rerun()
-    
-    st.subheader("App Configuration")
-    app_name = st.text_input("App Name", value="Taxi Manager")
-    currency = st.selectbox("Currency", ["USD", "EUR", "GBP", "Other"])
-    language = st.selectbox("Language", ["English", "Spanish", "French", "Arabic"])
-    
-    if st.button("💾 Save Settings"):
-        st.success("✅ Settings saved successfully!")
+
+# Footer
+st.divider()
+st.caption(f"© 2024 Taxi Manager Pro | Version 1.0 | Last Updated: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}")
