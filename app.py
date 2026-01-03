@@ -1,15 +1,9 @@
-# app.py - Taxi Manager with Driver Letters Feature
+# app.py - Taxi Manager (No PDF version)
 import streamlit as st
 import pandas as pd
 import sqlite3
 from datetime import datetime
 import io
-import tempfile
-from reportlab.lib.pagesizes import letter
-from reportlab.pdfgen import canvas
-from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
-from reportlab.platypus import Paragraph, SimpleDocTemplate, Spacer
-from reportlab.lib.enums import TA_LEFT, TA_CENTER, TA_RIGHT
 
 # Set page configuration
 st.set_page_config(
@@ -48,8 +42,7 @@ def init_db():
             subject TEXT,
             content TEXT,
             date_sent TEXT,
-            status TEXT DEFAULT 'Draft',
-            FOREIGN KEY (driver_id) REFERENCES drivers (id)
+            status TEXT DEFAULT 'Draft'
         )
     ''')
     
@@ -143,20 +136,14 @@ def get_letter_by_id(letter_id):
 def save_letter(letter_data):
     conn = get_db_connection()
     c = conn.cursor()
-    c.execute('''
-        INSERT INTO letters (driver_id, letter_type, subject, content, date_sent, status)
-        VALUES (?, ?, ?, ?, ?, ?)
-    ''', letter_data)
+    c.execute('INSERT INTO letters (driver_id, letter_type, subject, content, date_sent, status) VALUES (?, ?, ?, ?, ?, ?)', letter_data)
     conn.commit()
     conn.close()
 
 def update_letter(letter_id, letter_data):
     conn = get_db_connection()
     c = conn.cursor()
-    c.execute('''
-        UPDATE letters SET driver_id=?, letter_type=?, subject=?, content=?, date_sent=?, status=?
-        WHERE id=?
-    ''', (*letter_data, letter_id))
+    c.execute('UPDATE letters SET driver_id=?, letter_type=?, subject=?, content=?, date_sent=?, status=? WHERE id=?', (*letter_data, letter_id))
     conn.commit()
     conn.close()
 
@@ -183,89 +170,38 @@ def update_settings(settings_dict):
     conn.commit()
     conn.close()
 
-# PDF Generation function
-def generate_pdf_letter(driver_info, letter_type, subject, content, settings):
-    buffer = io.BytesIO()
-    
-    # Create PDF
-    doc = SimpleDocTemplate(buffer, pagesize=letter)
-    styles = getSampleStyleSheet()
-    
-    # Custom styles
-    company_style = ParagraphStyle(
-        'CompanyStyle',
-        parent=styles['Heading1'],
-        fontSize=16,
-        alignment=TA_CENTER,
-        spaceAfter=30
-    )
-    
-    driver_style = ParagraphStyle(
-        'DriverStyle',
-        parent=styles['Normal'],
-        fontSize=12,
-        alignment=TA_LEFT,
-        leftIndent=50
-    )
-    
-    content_style = ParagraphStyle(
-        'ContentStyle',
-        parent=styles['Normal'],
-        fontSize=11,
-        alignment=TA_LEFT,
-        leading=14
-    )
-    
-    # Build story (content)
-    story = []
-    
-    # Company Header
+# Simple text letter generator (no PDF)
+def generate_text_letter(driver_info, letter_type, subject, content, settings):
     company_name = settings.get('company_name', 'Taxi Manager')
     company_address = settings.get('company_address', '123 Taxi Street, Mumbai')
     company_phone = settings.get('company_phone', '+91 22 12345678')
+    manager_name = settings.get('manager_name', 'Manager')
     
-    story.append(Paragraph(company_name, company_style))
-    story.append(Paragraph(company_address, styles['Normal']))
-    story.append(Paragraph(f"Phone: {company_phone}", styles['Normal']))
-    story.append(Spacer(1, 30))
-    
-    # Date
-    story.append(Paragraph(f"Date: {datetime.now().strftime('%d %B, %Y')}", styles['Normal']))
-    story.append(Spacer(1, 20))
-    
-    # Driver Address
     driver_name = driver_info[1] if driver_info else "Driver Name"
     driver_address = driver_info[8] if driver_info and len(driver_info) > 8 else "Driver Address"
     
-    story.append(Paragraph(f"To,", styles['Normal']))
-    story.append(Paragraph(f"{driver_name}", driver_style))
-    if driver_address:
-        story.append(Paragraph(f"{driver_address}", driver_style))
-    story.append(Spacer(1, 30))
-    
-    # Subject
-    story.append(Paragraph(f"<b>Subject: {subject}</b>", styles['Normal']))
-    story.append(Spacer(1, 20))
-    
-    # Salutation
-    story.append(Paragraph(f"Dear {driver_name},", styles['Normal']))
-    story.append(Spacer(1, 10))
-    
-    # Content
-    story.append(Paragraph(content, content_style))
-    story.append(Spacer(1, 30))
-    
-    # Closing
-    story.append(Paragraph("Yours sincerely,", styles['Normal']))
-    story.append(Spacer(1, 40))
-    story.append(Paragraph(settings.get('manager_name', 'Manager'), styles['Normal']))
-    story.append(Paragraph(settings.get('company_name', 'Taxi Manager'), styles['Normal']))
-    
-    # Build PDF
-    doc.build(story)
-    
-    buffer.seek(0)
-    return buffer
+    letter_text = f"""
+{company_name}
+{company_address}
+Phone: {company_phone}
+
+Date: {datetime.now().strftime('%d %B, %Y')}
+
+To,
+{driver_name}
+{driver_address}
+
+Subject: {subject}
+
+Dear {driver_name},
+
+{content}
+
+Yours sincerely,
+{manager_name}
+{company_name}
+"""
+    return letter_text
 
 # Sidebar Navigation
 st.sidebar.title("TAXI MANAGER")
@@ -328,14 +264,6 @@ if menu == "DASHBOARD":
         if st.button("WRITE LETTER", use_container_width=True, type="primary"):
             st.session_state.current_letter_id = 'new'
             st.rerun()
-    
-    with qcol2:
-        if st.button("VIEW DRIVERS", use_container_width=True):
-            pass  # Already on drivers page
-    
-    with qcol3:
-        if st.button("VIEW REPORTS", use_container_width=True):
-            pass
     
     with qcol4:
         if st.button("ADD NEW DRIVER", use_container_width=True):
@@ -498,7 +426,7 @@ elif menu == "DRIVERS":
                 st.session_state.delete_confirm = None
                 st.rerun()
 
-# LETTERS PAGE - NEW FEATURE!
+# LETTERS PAGE
 elif menu == "LETTERS":
     st.title("DRIVER LETTERS & NOTIFICATIONS")
     
@@ -581,9 +509,10 @@ elif menu == "LETTERS":
             st.write("QUICK TEMPLATES:")
             col1, col2, col3 = st.columns(3)
             
+            template_content = ""
             with col1:
                 if st.button("APPOINTMENT"):
-                    st.session_state.letter_content = f"""We are pleased to appoint you as a driver with {settings.get('company_name', 'our company')}.
+                    template_content = f"""We are pleased to appoint you as a driver with {settings.get('company_name', 'our company')}.
 
 Your duties will include:
 1. Safe transportation of passengers
@@ -595,7 +524,7 @@ Please report to the office on Monday at 9:00 AM for further instructions."""
             
             with col2:
                 if st.button("WARNING"):
-                    st.session_state.letter_content = f"""This is a formal warning regarding your recent conduct.
+                    template_content = f"""This is a formal warning regarding your recent conduct.
 
 It has come to our attention that:
 - [Specify issue]
@@ -607,7 +536,7 @@ You are required to meet with the manager within 3 days to discuss this matter."
             
             with col3:
                 if st.button("MEETING"):
-                    st.session_state.letter_content = f"""This is to inform you about an important meeting.
+                    template_content = f"""This is to inform you about an important meeting.
 
 Date: [Enter Date]
 Time: [Enter Time]
@@ -617,8 +546,10 @@ Agenda: [Specify agenda]
 Your attendance is mandatory. Please be punctual."""
             
             # Letter content
-            if 'letter_content' not in st.session_state or st.session_state.current_letter_id != 'new':
-                if st.session_state.current_letter_id == 'new':
+            if st.session_state.current_letter_id == 'new':
+                if template_content:
+                    default_content = template_content
+                else:
                     default_content = f"""Dear Driver,
 
 
@@ -626,16 +557,17 @@ Your attendance is mandatory. Please be punctual."""
 Yours sincerely,
 {settings.get('manager_name', 'Manager')}
 {settings.get('company_name', 'Taxi Manager')}"""
-                else:
-                    default_content = letter_data[4] if letter_data else ""
-                st.session_state.letter_content = default_content
+            else:
+                default_content = letter_data[4] if letter_data else ""
             
-            content = st.text_area("LETTER CONTENT", value=st.session_state.letter_content, height=300)
+            content = st.text_area("LETTER CONTENT", value=default_content, height=300, key=f"content_{st.session_state.current_letter_id}")
             
-            col1, col2 = st.columns(2)
+            col1, col2, col3 = st.columns(3)
             with col1:
-                submit = st.form_submit_button("SAVE & GENERATE PDF", type="primary", use_container_width=True)
+                submit = st.form_submit_button("SAVE LETTER", type="primary", use_container_width=True)
             with col2:
+                generate = st.form_submit_button("PREVIEW LETTER", use_container_width=True)
+            with col3:
                 cancel = st.form_submit_button("CANCEL", use_container_width=True)
             
             if submit:
@@ -650,43 +582,46 @@ Yours sincerely,
                             update_letter(st.session_state.current_letter_id, (selected_driver, letter_type, subject, content, datetime.now().strftime("%Y-%m-%d"), "Sent"))
                             st.success("Letter updated successfully!")
                         
-                        # Generate PDF
-                        if selected_driver != "ALL":
-                            driver_info = get_driver_by_id(selected_driver)
-                            pdf_buffer = generate_pdf_letter(driver_info, letter_type, subject, content, settings)
-                            
-                            # Offer download
-                            st.download_button(
-                                label="DOWNLOAD PDF LETTER",
-                                data=pdf_buffer,
-                                file_name=f"Letter_{selected_driver}_{datetime.now().strftime('%Y%m%d')}.pdf",
-                                mime="application/pdf"
-                            )
-                        
                         st.session_state.current_letter_id = None
                         st.session_state.selected_drivers = []
                         st.rerun()
                     except Exception as e:
                         st.error(f"Error: {str(e)}")
             
+            if generate:
+                if selected_driver and selected_driver != "ALL":
+                    driver_info = get_driver_by_id(selected_driver)
+                    letter_text = generate_text_letter(driver_info, letter_type, subject, content, settings)
+                    
+                    st.subheader("LETTER PREVIEW")
+                    st.text_area("PREVIEW", value=letter_text, height=400, disabled=True)
+                    
+                    # Download as text file
+                    st.download_button(
+                        label="DOWNLOAD AS TEXT FILE",
+                        data=letter_text,
+                        file_name=f"Letter_{selected_driver}_{datetime.now().strftime('%Y%m%d')}.txt",
+                        mime="text/plain"
+                    )
+            
             if cancel:
                 st.session_state.current_letter_id = None
                 st.rerun()
 
-# Reports Page (simplified)
+# Reports Page
 elif menu == "REPORTS":
     st.title("REPORTS")
     
     report_type = st.selectbox(
         "SELECT REPORT TYPE",
-        ["DRIVER PERFORMANCE", "LETTERS HISTORY", "COMPLETE EXPORT"]
+        ["DRIVER LIST", "LETTERS HISTORY", "COMPLETE EXPORT"]
     )
     
     drivers_df = get_drivers()
     letters_df = get_letters()
     
-    if report_type == "DRIVER PERFORMANCE":
-        st.subheader("DRIVER PERFORMANCE REPORT")
+    if report_type == "DRIVER LIST":
+        st.subheader("DRIVER LIST")
         
         if not drivers_df.empty:
             st.dataframe(drivers_df, use_container_width=True)
@@ -695,11 +630,11 @@ elif menu == "REPORTS":
             st.download_button(
                 label="DOWNLOAD CSV",
                 data=csv,
-                file_name=f"driver_report_{datetime.now().strftime('%Y%m%d')}.csv",
+                file_name=f"driver_list_{datetime.now().strftime('%Y%m%d')}.csv",
                 mime="text/csv"
             )
         else:
-            st.info("No data available")
+            st.info("No drivers found")
     
     elif report_type == "LETTERS HISTORY":
         st.subheader("LETTERS HISTORY")
@@ -717,7 +652,7 @@ elif menu == "REPORTS":
         else:
             st.info("No letters sent yet")
 
-# Settings Page (simplified)
+# Settings Page
 elif menu == "SETTINGS":
     st.title("SETTINGS")
     
