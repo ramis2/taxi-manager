@@ -300,10 +300,9 @@ elif menu == "📄 Driver Letter":
     st.title("Driver Letter Generator")
     
     if st.session_state.drivers:
-        selected_driver = st.selectbox(
-            "Select Driver",
-            [f"{d['name']} ({d['license']})" for d in st.session_state.drivers]
-        )
+        # Create driver selection options
+        driver_options = [f"{d['name']} ({d['license']})" for d in st.session_state.drivers]
+        selected_driver = st.selectbox("Select Driver", driver_options)
         
         letter_type = st.selectbox("Letter Type", 
                                   ["Employment Certificate", 
@@ -313,19 +312,51 @@ elif menu == "📄 Driver Letter":
                                    "Custom Letter"])
         
         st.subheader("Letter Content")
-        letter_content = st.text_area("Enter letter content", height=200,
-                                     value=f"This is to certify that {selected_driver.split('(')[0].strip()}...")
         
-        if st.button("📄 Generate Letter"):
-            st.success("✅ Letter generated successfully!")
-            st.download_button(
-                label="📥 Download Letter",
-                data=letter_content,
-                file_name=f"letter_{selected_driver.split('(')[0].strip()}_{datetime.now().strftime('%Y%m%d')}.txt",
-                mime="text/plain"
-            )
+        # Default letter content based on type
+        default_content = ""
+        if letter_type == "Employment Certificate":
+            default_content = f"This is to certify that {selected_driver.split('(')[0].strip()} is employed as a driver with our company.\n\n"
+            default_content += f"License Number: {selected_driver.split('(')[1].replace(')', '')}\n"
+            default_content += "Position: Professional Driver\n"
+            default_content += f"Date: {datetime.now().strftime('%B %d, %Y')}\n\n"
+            default_content += "Sincerely,\nTaxi Manager"
+        
+        elif letter_type == "Salary Certificate":
+            default_content = f"SALARY CERTIFICATE\n\n"
+            default_content += f"This certifies that {selected_driver.split('(')[0].strip()} has been receiving a monthly salary of $XXXX.\n\n"
+            default_content += "For any queries, please contact our office.\n\n"
+            default_content += f"Date: {datetime.now().strftime('%B %d, %Y')}"
+        
+        letter_content = st.text_area("Enter letter content", 
+                                     value=default_content,
+                                     height=250)
+        
+        col1, col2 = st.columns(2)
+        
+        with col1:
+            if st.button("📄 Preview Letter"):
+                st.subheader("Letter Preview")
+                st.text(letter_content)
+        
+        with col2:
+            if st.button("📥 Generate & Download Letter"):
+                driver_name_clean = selected_driver.split('(')[0].strip().replace(" ", "_")
+                file_name = f"{driver_name_clean}_{letter_type.replace(' ', '_')}_{datetime.now().strftime('%Y%m%d')}.txt"
+                
+                st.success(f"✅ Letter generated successfully!")
+                st.download_button(
+                    label="📥 Download Letter",
+                    data=letter_content,
+                    file_name=file_name,
+                    mime="text/plain"
+                )
     else:
-        st.info("👥 No drivers available. Add drivers first.")
+        st.info("👥 No drivers available. Please add drivers first in the **Data Entry** section.")
+        if st.button("Go to Data Entry"):
+            # This would need JavaScript to change menu, but for now show message
+            st.write("Go to the **Data Entry** menu in the sidebar to add drivers.")
+
 
 # ==================== DELETE DRIVER ====================
 elif menu == "🗑️ Delete Driver":
