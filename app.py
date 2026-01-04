@@ -1,3 +1,24 @@
+import streamlit as st
+import os
+import sys
+
+st.set_page_config(layout="wide")
+
+# DEBUG: Show what's happening
+st.sidebar.title("DEBUG INFO")
+st.sidebar.write(f"Python: {sys.version}")
+st.sidebar.write(f"Current dir: {os.getcwd()}")
+st.sidebar.write(f"Files in dir: {os.listdir('.')}")
+
+# Check for common folders
+folders_to_check = ['templates', 'data', 'letters', 'docs']
+for folder in folders_to_check:
+    exists = os.path.exists(folder)
+    st.sidebar.write(f"📁 {folder}: {'✅' if exists else '❌'}")
+
+
+
+
 # app.py - COMPLETE Taxi Manager with ALL features
 import streamlit as st
 import sqlite3
