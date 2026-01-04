@@ -642,6 +642,32 @@ elif menu == "Car Management":
         st.info("No cars found. Add cars in Data Entry section.")
 
 # DRIVER LETTER - WITH DOWNLOAD & PRINT
+import streamlit as st
+import os
+
+st.title("Driver Letter Generator")
+
+# DEBUG: List all files in repository
+st.subheader("Debug: Files in Repository")
+for root, dirs, files in os.walk("."):
+    for file in files:
+        if "template" in file.lower() or "letter" in file.lower():
+            st.write(os.path.join(root, file))
+
+# Or check specific paths
+st.subheader("Checking Common Template Paths")
+common_paths = [
+    "templates/",
+    "letters/",
+    "docs/",
+    "templates/letter.docx",
+    "letter_template.docx",
+]
+
+for path in common_paths:
+    exists = os.path.exists(path)
+    st.write(f"📁 {path}: {'✅ EXISTS' if exists else '❌ NOT FOUND'}")
+
 elif menu == "Driver Letter":
     st.title("📝 Driver Letter Generator")
     
