@@ -1,0 +1,45 @@
+import streamlit as st
+import os
+
+def generate_letter():
+    # Check if template exists
+    template_files = [
+        "templates/letter.docx",
+        "letter_template.docx", 
+        "./templates/letter.docx"
+    ]
+    
+    found_template = None
+    for template in template_files:
+        if os.path.exists(template):
+            found_template = template
+            break
+    
+    if not found_template:
+        st.error("""
+        ❌ No template file found!
+        
+        Please ensure you have:
+        1. A 'templates/' folder in your GitHub repository
+        2. Your letter template (e.g., 'letter.docx') inside it
+        
+        Current directory contents:
+        """)
+        
+        # Show current files
+        for item in os.listdir("."):
+            st.write(f" - {item}")
+        
+        return
+    
+    st.success(f"✅ Found template: {found_template}")
+    # Continue with your letter generation...
+
+
+==========
+
+# Make sure ALL files are pushed:
+git add .
+git commit -m "Add all template files"
+git push origin main
+
