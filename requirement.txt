@@ -1,3 +1,2 @@
 streamlit==1.32.0
 pandas==1.5.3
-sqlite3  # This is built into Python, but listing it is okay
