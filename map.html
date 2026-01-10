@@ -1,0 +1,40 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Atlanta Taxi Dispatch Map</title>
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
+  <style>
+    #map { height: 500px; width: 100%; }
+    body { font-family: Arial; padding: 20px; }
+  </style>
+</head>
+<body>
+  <h1>🚕 Atlanta Taxi Dispatch - Live Map</h1>
+  <div id="map"></div>
+  
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+  <script>
+    // Atlanta center map
+    const map = L.map('map').setView([33.7490, -84.3880], 12);
+    
+    // Add map tiles
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+      attribution: '© OpenStreetMap'
+    }).addTo(map);
+    
+    // Atlanta landmarks
+    const atlantaLocations = [
+      {name: "Downtown", coords: [33.7550, -84.3900]},
+      {name: "Midtown", coords: [33.7866, -84.3880]},
+      {name: "Buckhead", coords: [33.8474, -84.3790]},
+      {name: "Airport", coords: [33.6407, -84.4281]}
+    ];
+    
+    atlantaLocations.forEach(loc => {
+      L.marker(loc.coords)
+        .addTo(map)
+        .bindPopup(`<b>${loc.name}</b><br>Atlanta, GA`);
+    });
+  </script>
+</body>
+</html>
