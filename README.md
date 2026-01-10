@@ -1,19 +1,11 @@
-# Atlanta Taxi Dispatch - MongoDB Database
+# Atlanta Taxi Dispatch System
 
-## Database Connection
-- **Database:** attaxidata
-- **URI:** mongodb://localhost:27017/attaxidata
-- **Status:** ✅ Connected
+## 🚕 Real-time Taxi Dispatch with MongoDB
 
-## Collections
-1. **trips** - 277 trip records
-2. **drivers** - Atlanta taxi drivers
+### Features:
+- **Real-time driver tracking** with geospatial queries
+- **Dispatch system** to find nearest available drivers
+- **Interactive map** showing Atlanta taxi locations
+- **MongoDB database** with 277+ trip records
 
-## Atlanta Taxi Drivers
-| Driver ID | Name | Status | Location | Vehicle |
-|-----------|------|--------|----------|---------|
-| ATL-001 | Michael Johnson | Available | Downtown | Toyota Camry |
-| ATL-002 | Sarah Williams | On Trip | Midtown | Honda Accord |
-
-## Screenshot
-![Atlanta Taxi Drivers in MongoDB](atlanta_drivers_screenshot.jpg)
+### Project Structure:
