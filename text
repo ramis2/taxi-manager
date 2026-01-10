@@ -1,4 +1,9 @@
-atlanta-taxi-dispatch/
-├── README.md
-├── atlanta_drivers_screenshot.jpg
-└── database_info.txt
+
+### How to Run:
+1. Start MongoDB: `mongod`
+2. Setup database: `mongosh < database/setup.js`
+3. Open map: `open frontend/map.html`
+
+### Atlanta Drivers:
+- Michael Johnson (ATL-001) - Downtown Atlanta
+- Sarah Williams (ATL-002) - Midtown Atlanta
